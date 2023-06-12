@@ -1,5 +1,14 @@
 #Need to run this script from the same directory as the RanchergMSACredentialProvider binary. 
 
+## GLOBAL CONSTANTS
+
+$appId = "24DC734A-E2D4-4F12-A387-F6209CBAF4FC" 
+$CLSID = "E4781092-F116-4B79-B55E-28EB6A224E26" 
+$dllName  = "RanchergMSACredentialProvider.dll"
+$dllDirectoryPath = "C:\Program Files\RanchergMSACredentialProvider\"
+$dllFileLocationEscaped = "C:\\Program Files\\RanchergMSACredentialProvider\\RanchergMSACredentialProvider.dll"
+
+
 <#
     This file registers the CCG plugin DLL onto the windows system. It does so by doing the following:
 
@@ -13,14 +22,6 @@
     8. Actually register the COM component in the private registry
     9. Clean up access rules and privileges.
 #>
-
-## GLOBAL CONSTANTS
-
-$appId = "557110E1-88BC-4583-8281-6AAC6F708584" # todo; generate a new GUID for this 
-$CLSID = "CCC2A336-D7F3-4818-A213-272B7924213E" # todo; generate a new GUID for this
-$dllName  = "RanchergMSACredentialProvider.dll"
-$dllDirectoryPath = "C:\Program Files\RanchergMSACredentialProvider\"
-$dllFileLocationEscaped = "C:\\Program Files\\RanchergMSACredentialProvider\\RanchergMSACredentialProvider.dll"
 
 # 1. Place the dll file in a more appropriate location on the system
 mkdir $dllDirectoryPath

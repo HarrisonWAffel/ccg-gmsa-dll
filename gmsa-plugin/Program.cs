@@ -22,14 +22,13 @@ namespace gmsaPlugin
     // the IUnknown Interafece (Specified in the Interface Type),
     // as well as register a Guid which is used to identify the
     // component within Windows. 
-    [Guid("55F53260-405E-427E-AD5F-98C89F05CEFE")]
+    [Guid("24DC734A-E2D4-4F12-A387-F6209CBAF4FC")]
     [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
     [ComImport]
     public interface gMSACredentialGetter
     {
         // call details should match  
         // https://learn.microsoft.com/en-us/windows/win32/api/ccgplugins/nf-ccgplugins-iccgdomainauthcredentials-getpasswordcredentials
-        //
 
         void GetPasswordCredentials(
         [MarshalAs(UnmanagedType.LPWStr), In] string pluginInput,
@@ -40,7 +39,7 @@ namespace gmsaPlugin
    
 
     [ProgId("RancherGmsaCredentialsProvider")]
-    [Guid("55F53260-405E-427E-AD5F-98C89F05CEFE")]
+    [Guid("24DC734A-E2D4-4F12-A387-F6209CBAF4FC")]
     public class Main : ServicedComponent, gMSACredentialGetter {
 
         public void GetPasswordCredentials(
