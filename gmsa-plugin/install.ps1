@@ -1,6 +1,13 @@
-#Need to run this script from the same directory as the RanchergMSACredentialProvider binary. 
+# This is a slightly modified version of the publicly available AKS ccg plugin install script which includes many
+# more comments which are helpful to those uninitiated with Windows internals / Concepts. 
+
+# Note: 
+# You need to run this script from the same directory as the RanchergMSACredentialProvider binary. 
+# You need to have the Containers feature enabled for any of this to work.
+# You need to run this script as an administrator.
 
 ## GLOBAL CONSTANTS
+## DO NOT CHANGE GUIDs
 
 $appId = "24DC734A-E2D4-4F12-A387-F6209CBAF4FC" 
 $CLSID = "E4781092-F116-4B79-B55E-28EB6A224E26" 
@@ -8,18 +15,17 @@ $dllName  = "RanchergMSACredentialProvider.dll"
 $dllDirectoryPath = "C:\Program Files\RanchergMSACredentialProvider\"
 $dllFileLocationEscaped = "C:\\Program Files\\RanchergMSACredentialProvider\\RanchergMSACredentialProvider.dll"
 
-
 <#
     This file registers the CCG plugin DLL onto the windows system. It does so by doing the following:
 
     1. Place the dll file in an appropriate location on the system. This location is referenced by the registry.
     2. Define a utility function which allows us to enable or disable privileges for a user.
-    3. Create and Register an AppId for the COM component in the registry
-    4. Define launch and access permissions for the AppId using the Security Descriptor Definition Lanauge (sddl)
-    5. Register a CLSID which uses the dll file and the AppId to provide a GUID for the COM class
-    6. Configure thread access rules for the COM object using the AppId
-    7. Configure access rules for the current user so we can register the COM component in this script
-    8. Actually register the COM component in the private registry
+    3. Create and Register an AppId for the COM component in the registry.
+    4. Define launch and access permissions for the AppId using the Security Descriptor Definition Lanauge (sddl).
+    5. Register a CLSID which uses the dll file and the AppId to provide a GUID for the COM class.
+    6. Configure thread access rules for the COM object using the AppId.
+    7. Configure access rules for the current user so we can register the COM component in this script.
+    8. Actually register the COM component in the private registry.
     9. Clean up access rules and privileges.
 #>
 
@@ -110,7 +116,7 @@ function enable-privilege {
 }
 
 # 3. Register the class via an AppID in the Registry under the same GUID as specified in the source code.
-New-Item -path "HKLM:\Software\CLASSES\Appid\{"+$appId+"}"
+New-Item -path "HKLM:\Software\CLASSES\Appid\{$appId}"
 
 # 4. sddl stands for 'Security Descriptor Definition Language'. This configures Windows Access Control Entries for the COM object so it can be called. 
 # don't touch this. 
@@ -120,19 +126,19 @@ $hexSddl = $sddlString.Split(',') | ForEach-Object { "0x$_"}
 # Here we assign some launch permissions to the AppId. The AppId used here must match the one defined in the source code.
 # AppIds are used both for handling launch permissions as well as defining the context in which the dll exists (such as a Windows service). You can only change 
 # access permissions via the AppID. This is used by RPCSS under the hood when the dll is called.
-New-ItemProperty -Path "HKLM:\Software\CLASSES\Appid\{"+$appId+"}" -Name "AccessPermission" -PropertyType Binary -Value ([byte[]]$hexSddl)
-New-ItemProperty -Path "HKLM:\Software\CLASSES\Appid\{"+$appId+"}" -Name "LaunchPermission" -PropertyType Binary -Value ([byte[]]$hexSddl)
-New-ItemProperty -Path "HKLM:\Software\CLASSES\Appid\{"+$appId+"}" -Name "DllSurrogate" -Value ""
+New-ItemProperty -Path "HKLM:\Software\CLASSES\Appid\{$appId}" -Name "AccessPermission" -PropertyType Binary -Value ([byte[]]$hexSddl)
+New-ItemProperty -Path "HKLM:\Software\CLASSES\Appid\{$appId}" -Name "LaunchPermission" -PropertyType Binary -Value ([byte[]]$hexSddl)
+New-ItemProperty -Path "HKLM:\Software\CLASSES\Appid\{$appId}" -Name "DllSurrogate" -Value ""
 
 # 5. Here, we register a CLSID for the dll. We specify the AppId created previously as a property of the CLSID, as well as point to the location where the dll is stored. 
 # More information on CLISD can be found here: https://learn.microsoft.com/en-us/windows/win32/com/clsid-key-hklm
-New-item -path "HKLM:\SOFTWARE\CLASSES\CLSID\{"+$CLSID+"}"
-New-ItemProperty -path "HKLM:\SOFTWARE\CLASSES\CLSID\{"+$CLSID+"}" -Name "AppID" -Value "{"+$appId+"}"
-New-item -path "HKLM:\SOFTWARE\CLASSES\CLSID\{"+$CLSID+"}\InprocServer32" -Value $dllFileLocationEscaped
+New-item -path "HKLM:\SOFTWARE\CLASSES\CLSID\{$CLSID}"
+New-ItemProperty -path "HKLM:\SOFTWARE\CLASSES\CLSID\{$CLSID}" -Name "AppID" -Value "{$appId}"
+New-item -path "HKLM:\SOFTWARE\CLASSES\CLSID\{$CLSID}\InprocServer32" -Value $dllFileLocationEscaped
 
 # 6. Here we define the thread access rules of the COM object. In this case we want the dll to run in the same 'apartment' as the client process. 
 # Apartments are a way to controll access to the process from specific threads, read more here: https://learn.microsoft.com/en-us/windows/win32/com/processes--threads--and-apartments#the-apartment-and-the-com-threading-architecture
-New-ItemProperty -path "HKLM:\SOFTWARE\CLASSES\CLSID\{"+$CLSID+"}\InprocServer32" -Name "ThreadingModel" -Value "Both"
+New-ItemProperty -path "HKLM:\SOFTWARE\CLASSES\CLSID\{$CLSID}\InprocServer32" -Name "ThreadingModel" -Value "Both"
 
 # 7. set owner of key to current user
 if(enable-privilege SeTakeOwnershipPrivilege){
@@ -143,6 +149,8 @@ else{
 }
 
 # The current user owns the COM class.
+# here we use the .NET registry class to open a COM class subkey 
+# This key won't exist if the containers feature isn't enabled 
 $key = [Microsoft.Win32.Registry]::LocalMachine.OpenSubKey("SYSTEM\CurrentControlSet\Control\CCG\COMClasses",[Microsoft.Win32.RegistryKeyPermissionCheck]::ReadWriteSubTree,[System.Security.AccessControl.RegistryRights]::takeownership)
 $acl = $key.GetAccessControl()
 $originalOwner = $acl.owner
@@ -163,7 +171,7 @@ $acl.AddAccessRule($rule)
 $key.SetAccessControl($acl)
 
 # 8. Register the COM Class under the CLSID defined earlier 
-New-item -path  "HKLM:\SYSTEM\CurrentControlSet\Control\CCG\COMClasses\{"+$CLSID+"}" -Value ""
+New-item -path  "HKLM:\SYSTEM\CurrentControlSet\Control\CCG\COMClasses\{$CLSID}" -Value ""
 
 # 9. Set owner back to original owner and remove access rule for current user. 
 $acl = $key.GetAccessControl()
@@ -185,7 +193,7 @@ if (enable-privilege SeRestorePrivilege -disable){
 else{
 	Write-Host "Disabling SeRestorePrivilege privilege failed"
 }
- 
+
 if (enable-privilege SeTakeOwnershipPrivilege -disable){
 	Write-Host "Disabled SeTakeOwnershipPrivilege privilege"	
 }

@@ -10,8 +10,11 @@ using System.Text.Json.Serialization;
 // which can only be found on Windows OS's.
 // Expect IDE errors when editing this file
 // on Mac or Linux. Builds will only succeed
-// on Windows.
+// on Windows. If this still can't be resolved
+// on Windows, use the Object Explorer to add
+// a reference to the library. 
 using System.EnterpriseServices;
+
 
 namespace gmsaPlugin
 {
@@ -21,13 +24,13 @@ namespace gmsaPlugin
     // is aware of the implementation. All COM components inherit
     // the IUnknown Interafece (Specified in the Interface Type),
     // as well as register a Guid which is used to identify the
-    // component within Windows. 
+    // component within the Windows registry.
     [Guid("24DC734A-E2D4-4F12-A387-F6209CBAF4FC")]
     [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
     [ComImport]
     public interface gMSACredentialGetter
     {
-        // call details should match  
+        // call details should match expected api
         // https://learn.microsoft.com/en-us/windows/win32/api/ccgplugins/nf-ccgplugins-iccgdomainauthcredentials-getpasswordcredentials
 
         void GetPasswordCredentials(
@@ -36,7 +39,6 @@ namespace gmsaPlugin
         [MarshalAs(UnmanagedType.LPWStr)] out string username,
         [MarshalAs(UnmanagedType.LPWStr)] out string password);
     }
-   
 
     [ProgId("RancherGmsaCredentialsProvider")]
     [Guid("24DC734A-E2D4-4F12-A387-F6209CBAF4FC")]
@@ -52,15 +54,6 @@ namespace gmsaPlugin
             username = "b";
             password = "c";
             return;
-        }
-
-        public async Task<GmsaOperatorResponse?> RequestOperator(HttpClient client, String input)
-        {
-            var jsonStream = await client.GetStringAsync("https://localhost:7586");
-
-            var response = System.Text.Json.JsonSerializer.Deserialize<GmsaOperatorResponse>(jsonStream);
-
-            return response;
         }
     }
 }
