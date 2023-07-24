@@ -2,17 +2,13 @@
 
 #Need to run this script from the same directory as the binary. 
 
-$CLSID = "e4781092-f116-4b79-b55e-28eb6a224e26"
-$DLL_FILE_LOCATION="C:\Program Files\RanchergMSACredentialProvider"
-$DLL_FILE_NAME = "RanchergMSACredentialProvider.dll"
+mkdir "C:\Program Files\RanchergMSACredentialProvider" -Force
+copy RanchergMSACredentialProvider.dll "C:\Program Files\RanchergMSACredentialProvider\"
 
-mkdir $DLL_FILE_LOCATION -Force
-copy $DLL_FILE_NAME $DLL_FILE_LOCATION
+& "C:\Windows\Microsoft.NET\Framework64\v4.0.30319\regsvcs" /fc "C:\Program Files\RancherGMSACredentialProvider\RanchergMSACredentialProvider.dll"
 
-
-# Use regsvc to register the DLL - TODO; investigate app permissions for the resulting dll and how to properly define sddl 
-& "C:\Windows\Microsoft.NET\Framework64\v4.0.30319\regsvcs" /fc "$DLL_FILE_LOCATION\$DLL_FILE_NAME"
-
+# Change the services identity to be Network Service as it defaults to logged in user
+# and when running without a logged in user, this fails...
 $comAdmin = New-Object -comobject COMAdmin.COMAdminCatalog
 $apps = $comAdmin.GetCollection("Applications")
 $apps.Populate()
@@ -25,7 +21,6 @@ function enable-privilege {
     param(
         ## The privilege to adjust. This set is taken from
         ## http://msdn.microsoft.com/en-us/library/bb530716(VS.85).aspx
-        ## DO NOT MODIFY
         [ValidateSet(
             "SeAssignPrimaryTokenPrivilege", "SeAuditPrivilege", "SeBackupPrivilege",
             "SeChangeNotifyPrivilege", "SeCreateGlobalPrivilege", "SeCreatePagefilePrivilege",
@@ -128,8 +123,7 @@ $rule = New-Object System.Security.AccessControl.RegistryAccessRule($idRef, $reg
 $acl.AddAccessRule($rule)
 $key.SetAccessControl($acl)
 
-# Inform CCG about our plugin
-New-item -path  "HKLM:\SYSTEM\CurrentControlSet\Control\CCG\COMClasses\{$CLSID}" -Value ""
+New-item -path  "HKLM:\SYSTEM\CurrentControlSet\Control\CCG\COMClasses\{e4781092-f116-4b79-b55e-28eb6a224e26}" -Value ""
 
 #Set owner back to original owner and remove access rule for current user. 
 $acl = $key.GetAccessControl()

@@ -19,7 +19,7 @@ using System.Runtime.InteropServices;
 [assembly: ApplicationActivation(ActivationOption.Server)]
 [assembly: ApplicationID("79B8037B-1098-435F-9E8A-9D332D3B8BB7")]
 [assembly: ApplicationAccessControl(
-    AccessChecksLevel = AccessChecksLevelOption.Application,
+   AccessChecksLevel = AccessChecksLevelOption.Application,
     Authentication = AuthenticationOption.None,
     Value = false
 )]
@@ -27,7 +27,7 @@ using System.Runtime.InteropServices;
 // Setting ComVisible to false makes the types in this assembly not visible
 // to COM components.  If you need to access a type in this assembly from
 // COM, set the ComVisible attribute to true on that type.
-[assembly: ComVisible(true)]
+//[assembly: ComVisible(true)]
 
 // The following GUID is for the ID of the typelib if this project is exposed to COM
 [assembly: Guid("ee591616-6b05-4faa-a778-304ae055127f")]
