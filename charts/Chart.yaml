@@ -1,0 +1,10 @@
+apiVersion: v2
+name: gmsa-provider
+description: Simple Chart
+version: 0.0.0
+appVersion: 0.0.0
+annotations:
+  catalog.cattle.io/certified: rancher
+maintainers:
+  - email: example@example.com
+    name: test

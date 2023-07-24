@@ -87,19 +87,23 @@ namespace rancher.gmsa
             // disable SSL checks for development 
             ServicePointManager.ServerCertificateValidationCallback += (sender, cert, chain, sslPolicyErrors) => true;
 
-            var secretUri = "https://haffel-webhook.suse.ngrok.io";
+            var secretUri = "https://localhost:8080";
             var httpClient = new HttpClient();
             LogInfo("we created an http client");
+
             try
-            {              
-                var content = new StringContent(pluginInput.ActiveDirectory + " and " + pluginInput.SecretName + " with port " + pluginInput.Port);
-                LogInfo("making request, content is " + content.ToString());
-                var response = httpClient.PostAsync(secretUri, content);
+            {
+                HttpRequestMessage req = new HttpRequestMessage(HttpMethod.Get, secretUri);
+                req.Headers.Add("object", pluginInput.SecretName);
+                req.Content = new StringContent(pluginInput.ActiveDirectory + " and " + pluginInput.SecretName + " with port " + pluginInput.Port);
+                LogInfo("making request, content is " + req.Content.ToString());
+                var response = httpClient.SendAsync(req).Result;
             }
             catch (Exception ex)
             {
                 LogError("Http Client Hit An Exception: \n " + ex.ToString());
             }
+
         }
 
         public PluginInput DecodeInput(string pluginInput)
@@ -132,6 +136,7 @@ namespace rancher.gmsa
 
             public string GetPort(string pluginInput)
             {
+                return "";
                string subDirFile = "/var/lib/rancher/gmsa/" + this.ActiveDirectory + "/port.txt";
                string text = "";
                try { 

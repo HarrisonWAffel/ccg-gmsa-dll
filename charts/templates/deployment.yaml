@@ -1,0 +1,29 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gmsa-provider-deployment
+  labels:
+    app: gmsa-provider
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: gmsa-provider
+  template:
+    metadata:
+      labels:
+        app: gmsa-provider
+    spec:
+      hostNetwork: true
+      nodeSelector:
+        kubernetes.io/os: windows
+      containers:
+        - name: provider
+          image: harrisonwaffel/gmsa:latest
+          securityContext:
+            windowsOptions:
+              hostProcess: true
+              runAsUserName: "NT AUTHORITY\\Local service"
+          env:
+            - name: ACTIVE_DIRECTORY
+              value: test

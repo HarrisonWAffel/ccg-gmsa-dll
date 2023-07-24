@@ -7,8 +7,6 @@ copy RanchergMSACredentialProvider.dll "C:\Program Files\RanchergMSACredentialPr
 
 & "C:\Windows\Microsoft.NET\Framework64\v4.0.30319\regsvcs" /fc "C:\Program Files\RancherGMSACredentialProvider\RanchergMSACredentialProvider.dll"
 
-# Change the services identity to be Network Service as it defaults to logged in user
-# and when running without a logged in user, this fails...
 $comAdmin = New-Object -comobject COMAdmin.COMAdminCatalog
 $apps = $comAdmin.GetCollection("Applications")
 $apps.Populate()
