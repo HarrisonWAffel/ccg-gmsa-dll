@@ -1,5 +1,8 @@
 FROM golang:1.20
 
+# This file is just for local testing
+# TODO: provide some args to disable windows specific things
+
 WORKDIR /app
 
 COPY go.mod go.sum ./

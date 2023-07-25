@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"os"
 	"runtime"
+
+	"github.com/pkg/errors"
 )
 
 // this file creates a dynamic directory within the
@@ -18,16 +20,22 @@ func CreateDir(dirName string) error {
 		// this program should
 		// not run on linux
 		// or mac
-		return nil
+		return fmt.Errorf("unsupported OS")
 	}
 
 	// TODO: Adjust Directory Permissions
 	if _, err := os.Stat(baseDir); os.IsNotExist(err) {
 		err = os.Mkdir(baseDir, os.ModePerm)
+		if err != nil {
+			return errors.Wrap(err, "failed to create base directory")
+		}
 	}
 
 	if _, err := os.Stat(fmt.Sprintf("%s/%s", baseDir, dirName)); os.IsNotExist(err) {
 		err = os.Mkdir(fmt.Sprintf("%s/%s", baseDir, dirName), os.ModePerm)
+		if err != nil {
+			return errors.Wrap(err, "failed to create dynamic sub directory")
+		}
 	}
 
 	return nil
@@ -38,16 +46,19 @@ func WritePortFile(port string) error {
 		// this program should
 		// not run on linux
 		// or mac
-		return nil
+		return fmt.Errorf("unsupported OS")
 	}
 
 	// TODO: adjust file permissions
 	if _, err := os.Stat(fmt.Sprintf("%s/%s", baseDir, "port.txt")); os.IsNotExist(err) {
 		// create the file
 		err = os.WriteFile(fmt.Sprintf("%s/%s", baseDir, "port.txt"), []byte(port), os.ModePerm)
+		if err != nil {
+			return errors.Wrap(err, "failed to create port.txt")
+		}
 	}
 
-	// verify the files contents
+	// verify the file contents
 
 	return nil
 }

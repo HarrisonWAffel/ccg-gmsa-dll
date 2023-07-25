@@ -9,22 +9,18 @@ type CredentialController struct {
 	Secrets v1.SecretInterface
 }
 
-func NewController(ns string) *CredentialController {
+func NewController(ns string) (*CredentialController, error) {
 	cfg, err := rest.InClusterConfig()
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
 	secretCnfg, err := v1.NewForConfig(*cfg)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
-	s := secretCnfg.Secrets(ns)
-
-	controller := &CredentialController{
-		Secrets: s,
-	}
-
-	return controller
+	return &CredentialController{
+		Secrets: secretCnfg.Secrets(ns),
+	}, nil
 }

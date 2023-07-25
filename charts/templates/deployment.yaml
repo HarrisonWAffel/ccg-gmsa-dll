@@ -20,10 +20,16 @@ spec:
       containers:
         - name: provider
           image: harrisonwaffel/gmsa:latest
+          volumeMounts:
+            - name: mount
+              mountPath: /main.exe
+              subPath: main.exe
           securityContext:
             windowsOptions:
               hostProcess: true
               runAsUserName: "NT AUTHORITY\\Local service"
           env:
             - name: ACTIVE_DIRECTORY
+              value: test
+            - name: RELEASE_NAMESPACE
               value: test
