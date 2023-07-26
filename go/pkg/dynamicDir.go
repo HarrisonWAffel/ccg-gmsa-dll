@@ -15,7 +15,7 @@ import (
 
 const baseDir = "/var/lib/rancher/gmsa"
 
-func CreateDir(dirName string) error {
+func CreateDir(dirName, port string) error {
 	if runtime.GOOS != "windows" {
 		// this program should
 		// not run on linux
@@ -38,27 +38,35 @@ func CreateDir(dirName string) error {
 		}
 	}
 
-	return nil
-}
-
-func WritePortFile(port string) error {
-	if runtime.GOOS != "windows" {
-		// this program should
-		// not run on linux
-		// or mac
-		return fmt.Errorf("unsupported OS")
-	}
-
+	portFile := fmt.Sprintf("%s/%s/%s", baseDir, dirName, "port.txt")
 	// TODO: adjust file permissions
-	if _, err := os.Stat(fmt.Sprintf("%s/%s", baseDir, "port.txt")); os.IsNotExist(err) {
+	if _, err := os.Stat(portFile); os.IsNotExist(err) {
 		// create the file
-		err = os.WriteFile(fmt.Sprintf("%s/%s", baseDir, "port.txt"), []byte(port), os.ModePerm)
+		err = os.WriteFile(portFile, []byte(port), os.ModePerm)
 		if err != nil {
 			return errors.Wrap(err, "failed to create port.txt")
 		}
 	}
 
-	// verify the file contents
+	contents, err := os.ReadFile(portFile)
+	if err != nil {
+		return err
+	}
 
-	return nil
+	if string(contents) == port {
+		return nil
+	}
+
+	// update file with new port
+	f, err := os.OpenFile(portFile, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0755)
+	if err != nil {
+		return errors.Wrap(err, "failed to open port.txt file")
+	}
+
+	_, err = f.WriteString(port)
+	if err != nil {
+		return errors.Wrap(err, "failed to update port.txt file")
+	}
+
+	return f.Close()
 }

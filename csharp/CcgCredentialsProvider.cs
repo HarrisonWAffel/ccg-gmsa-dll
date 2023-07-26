@@ -5,15 +5,15 @@ using System.Net.Http;
 using System.IO;
 using System.Net;
 using System.Diagnostics;
-using System.Collections.Generic;
-using System.Web.Script.Serialization;
+using System.Security.Cryptography.X509Certificates;
+using System.Security.Authentication;
 
 namespace rancher.gmsa
 {
 
-    // TODO; env vars. How can we deploy this DLL in 'dev mode' so that we can more easily debug and 
-    // assess issues? We could probably get away with using the registry for simple flags. 
-    // We would want: Disable SSL/mTLS certs, log to server (?), 
+    // TODO; env vars. How can we deploy this DLL in 'dev mode' so that we can more easily debug and
+    // assess issues? We could probably get away with using the registry for simple flags.
+    // We would want: Disable SSL/mTLS certs, log to server (?),
 
     [Guid("6ECDA518-2010-4437-8BC3-46E752B7B172")]
     [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
@@ -39,7 +39,7 @@ namespace rancher.gmsa
             logger = new EventLog("Application");
             logger.Source = "Application";
         }
-        
+
         private void LogInfo(string log)
         {
             logger.WriteEntry(log, EventLogEntryType.Information, 101, 1);
@@ -67,7 +67,7 @@ namespace rancher.gmsa
             }
             catch (Exception e)
             {
-                // log the exception our self 
+                // log the exception ourself
                 // so we know we can find it
                 LogError(e.ToString());
                 // throw it again so ccg can catch it
@@ -84,26 +84,34 @@ namespace rancher.gmsa
 
         public void GetCredential(PluginInput pluginInput)
         {
-            // disable SSL checks for development 
+            // disable SSL checks for development
             ServicePointManager.ServerCertificateValidationCallback += (sender, cert, chain, sslPolicyErrors) => true;
 
-            var secretUri = "https://localhost:8080";
-            var httpClient = new HttpClient();
-            LogInfo("we created an http client");
+            // todo; mTLS
+            var secretUri = "http://localhost:" + pluginInput.Port + "/provider";
 
+            X509Certificate2 clientCertificate = new X509Certificate2("/var/lib/rancher/gmsa/" + pluginInput.ActiveDirectory + "/client-cert.crt");
+
+            HttpClient httpClient = new HttpClient(new HttpClientHandler
+            {
+                ClientCertificateOptions = ClientCertificateOption.Manual,
+                SslProtocols = SslProtocols.Tls12,
+                ClientCertificates = { clientCertificate }
+            });
+
+            LogInfo("Preparing to make request: Using secret: " + pluginInput.SecretName + "from namespace: " + pluginInput.ActiveDirectory + " and port: " + pluginInput.Port + " results in uri: " + secretUri);
             try
             {
                 HttpRequestMessage req = new HttpRequestMessage(HttpMethod.Get, secretUri);
                 req.Headers.Add("object", pluginInput.SecretName);
-                req.Content = new StringContent(pluginInput.ActiveDirectory + " and " + pluginInput.SecretName + " with port " + pluginInput.Port);
-                LogInfo("making request, content is " + req.Content.ToString());
                 var response = httpClient.SendAsync(req).Result;
+                var x = response.Content.ReadAsStringAsync().Result;
+                LogInfo("Got response, " + response.Content.ToString() +", and content of: " + x);
             }
             catch (Exception ex)
             {
                 LogError("Http Client Hit An Exception: \n " + ex.ToString());
             }
-
         }
 
         public PluginInput DecodeInput(string pluginInput)
@@ -113,12 +121,6 @@ namespace rancher.gmsa
 
         public class PluginInput
         {
-            // test
-            public PluginInput(bool isJson, string json) {
-                input = new JavaScriptSerializer().Deserialize<Dictionary<string, string>>(json);
-            }
-            public Dictionary<string, string> input;
-
             public PluginInput(string pluginInput)
             {
                 var parts = pluginInput.Split(':');
@@ -136,15 +138,12 @@ namespace rancher.gmsa
 
             public string GetPort(string pluginInput)
             {
-                return "";
                string subDirFile = "/var/lib/rancher/gmsa/" + this.ActiveDirectory + "/port.txt";
-               string text = "";
-               try { 
-                    text = File.ReadAllText(subDirFile);
+               try {
+                   return File.ReadAllText(subDirFile);
                } catch (Exception e) {
-                    throw new Exception("Failed to open port file");
+                    throw new Exception("Failed to open port file located at " + subDirFile);
                }
-               return text;
             }
         }
     }
