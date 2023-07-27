@@ -11,8 +11,8 @@ import (
 )
 
 var (
-	outputDir   = "./go/pkg/generated"
-	basePackage = "github.com/HarrisonWAffel/ccg-gmsa-dll/go/pkg/"
+	outputDir   = "./operator/pkg/generated"
+	basePackage = "github.com/HarrisonWAffel/ccg-gmsa-dll/operator/pkg/"
 	baseCattle  = "../client/generated"
 	baseK8s     = "norman"
 )

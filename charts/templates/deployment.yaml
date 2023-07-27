@@ -20,10 +20,6 @@ spec:
       containers:
         - name: provider
           image: harrisonwaffel/gmsa:latest
-          volumeMounts:
-            - name: mount
-              mountPath: /main.exe
-              subPath: main.exe
           securityContext:
             windowsOptions:
               hostProcess: true
