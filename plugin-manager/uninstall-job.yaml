@@ -1,0 +1,15 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: pi
+spec:
+  template:
+    spec:
+      containers:
+        - name: plugin-uninstaller
+          image: harrisonwaffel/gmsa-plugin-manager:latest
+          args:
+            - "uninstall"
+      restartPolicy: Never
+  backoffLimit: 4
+

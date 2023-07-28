@@ -35,9 +35,38 @@ metadata:
   namespace: cattle-windows-gmsa-system
 type: Opaque
 data:
-  username: user
-  password: password
-  domainName: test.com
+  username: dXNlcgo=
+  password: cGFzc3dvcmQK
+  domainName: dGVzdC5jb20K
+
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gmsa-plugin-manager-deployment
+  labels:
+    app: gmsa-plugin-manager
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: gmsa-plugin-manager
+  template:
+    metadata:
+      labels:
+        app: gmsa-plugin-manager
+    spec:
+      hostNetwork: true
+      nodeSelector:
+        kubernetes.io/os: windows
+      containers:
+        - name: plugin-manager
+          image: harrisonwaffel/gmsa-plugin-manager:latest
+          securityContext:
+            windowsOptions:
+              hostProcess: true
+              runAsUserName: "NT AUTHORITY\\SYSTEM"
 
 ---
 # todo; add new service account, rn just using default gmsa account
@@ -73,9 +102,9 @@ spec:
               runAsUserName: "NT AUTHORITY\\Local service"
           env:
             - name: ACTIVE_DIRECTORY
-              value: test
+              value: cattle-windows-gmsa-system
             - name: RELEASE_NAMESPACE
-              value: test
+              value: cattle-windows-gmsa-system
 
 ---
 

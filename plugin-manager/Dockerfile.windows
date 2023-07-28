@@ -1,9 +1,13 @@
 FROM mcr.microsoft.com/windows/nanoserver:ltsc2022 as runtime
 FROM golang:1.20 as builder
 
+SHELL ["powershell", "-Command", "$ErrorActionPreference = 'Stop'; $ProgressPreference = 'Continue'; $verbosePreference='Continue';"]
+
+WORKDIR /app
 
 COPY install-plugin.ps1 ./
 COPY RanchergMSACredentialProvider.dll ./
+COPY uninstall.ps1 ./
 
 ENV GOPATH=
 
@@ -15,6 +19,6 @@ RUN go build -o main.exe
 
 FROM runtime
 
-COPY --from=builder main.exe .
+COPY --from=builder /app/main.exe .
 
 ENTRYPOINT ["main.exe"]
