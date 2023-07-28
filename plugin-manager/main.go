@@ -17,13 +17,16 @@ var dll []byte
 //go:embed install-plugin.ps1
 var installer []byte
 
-// this file / container / chart will
-// write the dll and install script onto the host
-// and then execute the install script.
+const (
+	// baseDir is where we expect the dll to live
+	baseDir = "C:\\Program Files\\RanchergMSACredentialProvider"
+	// CCGCOMClassKey is the Windows Registry Key which is used by CCG to invoke the dll
+	CCGCOMClassKey = "SYSTEM\\CurrentControlSet\\Control\\CCG\\COMClasses\\{e4781092-f116-4b79-b55e-28eb6a224e26}"
+	// ClassesRootKey is the Windows Registry Key which is added by regsvc upon registering the dll, and is also used to invoke the dll
+	ClassesRootKey = "CLSID\\{E4781092-F116-4B79-B55E-28EB6A224E26}"
+)
 
 // todo; uninstall
-const baseDir = "C:\\Program Files\\RanchergMSACredentialProvider"
-
 func main() {
 	for {
 		fmt.Println("Checking installation...")
@@ -49,15 +52,15 @@ func main() {
 	}
 }
 
-const CCGCOMClassKey = "SYSTEM\\CurrentControlSet\\Control\\CCG\\COMClasses\\{e4781092-f116-4b79-b55e-28eb6a224e26}"
-const ClassesRootKey = "CLSID\\{E4781092-F116-4B79-B55E-28EB6A224E26}"
-
 func notAlreadyInstalled() bool {
 
 	// we should
 	// 1. Check that the DLL exists in the expected directory C:\Program Files\RanchergMSACredentialProvider
 	_, err := os.Stat(fmt.Sprintf(baseDir))
 	directoryDoesNotExist := err != nil
+
+	_, err = os.Stat(fmt.Sprintf("%s\\%s", baseDir, "RanchergMSACredentialProvider.dll"))
+	fileDoesNotExist := err != nil
 
 	// 2. Check the registry for a key in HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\CCG\COMClasses\{e4781092-f116-4b79-b55e-28eb6a224e26}
 	CCGEntryExists := CCGCOMClassExists(CCGCOMClassKey)
@@ -67,20 +70,23 @@ func notAlreadyInstalled() bool {
 
 	fmt.Println(fmt.Sprintf("Directory does not exist: %t, ccgentry %t, classroot %t", directoryDoesNotExist, CCGEntryExists, ClassesRootKeyExists))
 
-	if directoryDoesNotExist || !CCGEntryExists || !ClassesRootKeyExists {
-		return true
-	}
+	return directoryDoesNotExist || fileDoesNotExist || !CCGEntryExists || !ClassesRootKeyExists
 
 	// 4. somehow check if the dll is out of date, and if a newer version needs to be installed
 	//    4a. might be able to just check the bytes of the file, if there is any difference add the new file
 	//    4b. We need to understand how to hot-swap dll's (doesn't seem super hard)
 	//   		https://serverfault.com/questions/503721/replacing-dll-files-while-the-application-is-running
 	//			https://learn.microsoft.com/en-us/windows/win32/dlls/dynamic-link-library-updates
-	return false
 }
 
 func writeArtifacts() error {
-	err := os.WriteFile(fmt.Sprintf("%s\\%s", baseDir, "RanchergMSACredentialProvider.dll"), dll, os.ModePerm)
+
+	err := os.Mkdir(baseDir, os.ModePerm)
+	if err != nil {
+		return err
+	}
+
+	err = os.WriteFile(fmt.Sprintf("%s\\%s", baseDir, "RanchergMSACredentialProvider.dll"), dll, os.ModePerm)
 	if err != nil {
 		return err
 	}

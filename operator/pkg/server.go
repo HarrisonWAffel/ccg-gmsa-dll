@@ -1,9 +1,7 @@
 package pkg
 
 import (
-	"crypto/tls"
 	"fmt"
-	"log"
 	"net"
 	"net/http"
 	"time"
@@ -25,16 +23,7 @@ func (h *HttpServer) StartServer(errChan chan error, dirName string) string {
 	ln, _ := net.Listen("tcp", ":0")
 
 	go func() {
-		clientCert, err := tls.LoadX509KeyPair(fmt.Sprintf("%s/%s/%s", baseDir, dirName, "cert.crt"), fmt.Sprintf("%s/%s/%s", baseDir, dirName, "key.key"))
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		tlsConfig := &tls.Config{
-			Certificates: []tls.Certificate{clientCert}}
-		s := http.Server{Addr: ":0", Handler: h.Engine, TLSConfig: tlsConfig}
-		err = s.Serve(ln)
-
+		err := http.Serve(ln, h.Engine)
 		errChan <- err
 	}()
 
