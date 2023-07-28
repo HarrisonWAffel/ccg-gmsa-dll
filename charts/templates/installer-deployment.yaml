@@ -1,0 +1,25 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: gmsa-plugin-manager-deployment
+  labels:
+    app: gmsa-plugin-manager
+spec:
+  selector:
+    matchLabels:
+      app: gmsa-plugin-manager
+  template:
+    metadata:
+      labels:
+        app: gmsa-plugin-manager
+    spec:
+      hostNetwork: true
+      nodeSelector:
+        kubernetes.io/os: windows
+      containers:
+        - name: plugin-manager
+          image: harrisonwaffel/gmsa-plugin-manager:latest
+          securityContext:
+            windowsOptions:
+              hostProcess: true
+              runAsUserName: "NT AUTHORITY\\SYSTEM"
