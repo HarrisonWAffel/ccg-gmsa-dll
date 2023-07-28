@@ -16,11 +16,14 @@ type HttpServer struct {
 	Credentials *CredentialClient
 }
 
-func (h *HttpServer) StartServer(errChan chan error, dirName string) string {
+func (h *HttpServer) StartServer(errChan chan error, dirName string) (string, error) {
 	h.Engine.GET("/provider", h.handle)
 
 	// use a host allocated port
-	ln, _ := net.Listen("tcp", ":0")
+	ln, err := net.Listen("tcp", ":0")
+	if err != nil {
+		return "", fmt.Errorf("failed to create http listener for http server: %v", err)
+	}
 
 	go func() {
 		err := http.Serve(ln, h.Engine)
@@ -30,9 +33,12 @@ func (h *HttpServer) StartServer(errChan chan error, dirName string) string {
 	// let the server come up and
 	// be assigned a port
 	time.Sleep(250 * time.Millisecond)
-	_, port, _ := net.SplitHostPort(ln.Addr().String())
+	_, port, err := net.SplitHostPort(ln.Addr().String())
+	if err != nil {
+		return "", fmt.Errorf("failed to split host port from net listener: %v", err)
+	}
 	fmt.Println("Listening on port ", port)
-	return port
+	return port, nil
 }
 
 func (h *HttpServer) handle(c *gin.Context) {

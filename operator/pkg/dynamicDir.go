@@ -27,14 +27,14 @@ func CreateDir(dirName, port string) error {
 	if _, err := os.Stat(baseDir); os.IsNotExist(err) {
 		err = os.Mkdir(baseDir, os.ModePerm)
 		if err != nil {
-			return errors.Wrap(err, "failed to create base directory")
+			return fmt.Errorf("failed to create base directory: %v", err)
 		}
 	}
 
 	if _, err := os.Stat(fmt.Sprintf("%s/%s", baseDir, dirName)); os.IsNotExist(err) {
 		err = os.Mkdir(fmt.Sprintf("%s/%s", baseDir, dirName), os.ModePerm)
 		if err != nil {
-			return errors.Wrap(err, "failed to create dynamic sub directory")
+			return fmt.Errorf("failed to create dynamic sub directory: %v", err)
 		}
 	}
 
@@ -44,13 +44,13 @@ func CreateDir(dirName, port string) error {
 		// create the file
 		err = os.WriteFile(portFile, []byte(port), os.ModePerm)
 		if err != nil {
-			return errors.Wrap(err, "failed to create port.txt")
+			return fmt.Errorf("failed to create port.txt: %v", err)
 		}
 	}
 
 	contents, err := os.ReadFile(portFile)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to read the contents of %s: %v", portFile, err)
 	}
 
 	if string(contents) == port {

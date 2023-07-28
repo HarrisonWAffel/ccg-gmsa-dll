@@ -19,7 +19,7 @@ var dll []byte
 //go:embed install-plugin.ps1
 var installer []byte
 
-//go:embed uninstall.ps1
+//go:embed uninstall-plugin.ps1
 var uninstaller []byte
 
 const (
@@ -31,7 +31,7 @@ const (
 	ClassesRootKey = "CLSID\\{E4781092-F116-4B79-B55E-28EB6A224E26}"
 
 	installFileName   = "install-plugin.ps1"
-	uninstallFileName = "uninstall.ps1"
+	uninstallFileName = "uninstall-plugin.ps1"
 	dllFileName       = "RanchergMSACredentialProvider.dll"
 )
 
@@ -39,41 +39,63 @@ func main() {
 	args := os.Args[1:]
 	if len(args) == 0 {
 		watchInstall()
-	} else if args[0] == "uninstall" {
+	}
+
+	switch args[0] {
+	case "uninstall":
 		if err := uninstall(); err != nil {
-			panic(err)
+			panic(fmt.Sprintf("failed to uninstall plugin: %v", err))
 		}
-	} else if args[0] == "upgrade" {
-		// todo
-		panic("not yet implemented")
-	} else {
+	case "upgrade":
+		if err := upgrade(); err != nil {
+			panic(fmt.Sprintf("failed to upgrade plugin: %v", err))
+		}
+	default:
 		panic(fmt.Sprintf("unknown argument %s", args[0]))
 	}
 }
 
-func upgrade() {
-	// somehow check if the dll is out of date, and if a newer version needs to be installed
-	//    4a. might be able to just check the bytes of the file, if there is any difference add the new file
-	//    4b. We need to understand how to hot-swap dll's (doesn't seem super hard)
-	//   		https://serverfault.com/questions/503721/replacing-dll-files-while-the-application-is-running
-	//			https://learn.microsoft.com/en-us/windows/win32/dlls/dynamic-link-library-updates
+func upgrade() error {
+
+	// Some documentation on upgrading DLL's:
+	//  https://serverfault.com/questions/503721/replacing-dll-files-while-the-application-is-running
+	//	https://learn.microsoft.com/en-us/windows/win32/dlls/dynamic-link-library-updates
 
 	b, err := os.ReadFile(fmt.Sprintf("%s/%s", baseDir, dllFileName))
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	changed := !bytes.Equal(b, dll)
 	if !changed {
-		return
+		return nil
 	}
 
-	err = os.Rename(fmt.Sprintf("%s/%s", baseDir, dllFileName), fmt.Sprintf("%s/%s", baseDir, fmt.Sprintf("old-%s", dllFileName)))
+	oldDll := fmt.Sprintf("old-%s", dllFileName)
+	dllPath := fmt.Sprintf("%s/%s", baseDir, dllFileName)
+	oldDllPath := fmt.Sprintf("%s/%s", baseDir, oldDll)
 
-	err = os.WriteFile(fmt.Sprintf("%s\\%s", baseDir, dllFileName), dll, os.ModePerm)
+	fmt.Println("New plugin version detected, attempting upgrade")
+	_, err = os.Stat(oldDllPath)
+	if err != nil {
+		fmt.Printf("detected %s, deleting\n", oldDll)
+		// we found an old DLL, we should remove it before upgrading.
+		if err = os.Remove(oldDllPath); err != nil {
+			return fmt.Errorf("failed to remove old plugin dll: %v", err)
+		}
+	}
+
+	// rename the file, https://learn.microsoft.com/en-us/windows/win32/dlls/dynamic-link-library-updates
+	err = os.Rename(dllPath, oldDllPath)
+
+	// write the new file
+	err = os.WriteFile(dllPath, dll, os.ModePerm)
 	if err != nil && !strings.Contains(err.Error(), "already exists") {
-		panic(fmt.Errorf("failed to write dll file: %v", err))
+		return fmt.Errorf("failed to write dll file: %v", err)
 	}
+
+	fmt.Println("upgrade complete")
+	return nil
 }
 
 func uninstall() error {
@@ -93,13 +115,14 @@ func uninstall() error {
 
 	fmt.Println("successfully executed uninstallation script")
 	fmt.Println("attempting to remove DLL directory: ", baseDir)
-	// continuously try to remove the actual files
-	// we should do that part in go because
-	// there may be instances of CCG still referencing the file. In which case a simple rm will fail
-	// so we need to continuously try to rm it until all ccg instances are gone. We avoid workload
-	// outages due to the use of regsvc. While old CCG instances may still have the DLL loaded into memory
-	// they will eventually exit (needs to be confirmed via testing),
-	// and new instances will be unable to load the DLL anymore since its reference will be removed from the registry.
+	// continuously try to remove the actual files.
+	// We retry this process a few times because there may
+	// still be instances of CCG referencing the DLL. Windows
+	// will prevent the file from being deleted if any references
+	// still exist. Eventually, the CCG instances will terminate and
+	// all references will disappear, at which point the file can be
+	// deleted. It goes without saying that if you're uninstalling this plugin,
+	// you shouldn't be running workloads which need to use the plugin.
 	successfulRemoval := false
 	for i := 0; i < 10; i++ {
 		err = os.RemoveAll(baseDir)
@@ -107,7 +130,7 @@ func uninstall() error {
 			successfulRemoval = true
 			break
 		}
-		fmt.Println("encountered error removing DLL directory, will retry in 1 minute")
+		fmt.Println("encountered error removing DLL directory, some CCG instances may still be referencing the plugin. Will retry in 1 minute")
 		time.Sleep(1 * time.Minute)
 	}
 
@@ -173,7 +196,6 @@ func notAlreadyInstalled() bool {
 }
 
 func writeArtifacts() error {
-
 	err := os.Mkdir(baseDir, os.ModePerm)
 	if err != nil && !strings.Contains(err.Error(), "already exists") {
 		return fmt.Errorf("failed to create base directory: %v", err)

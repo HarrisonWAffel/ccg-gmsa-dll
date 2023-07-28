@@ -7,7 +7,7 @@ WORKDIR /app
 
 COPY install-plugin.ps1 ./
 COPY RanchergMSACredentialProvider.dll ./
-COPY uninstall.ps1 ./
+COPY uninstall-plugin.ps1 ./
 
 ENV GOPATH=
 
