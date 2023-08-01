@@ -2,3 +2,7 @@ image:
   repository: harrisonwaffel/gmsa-plugin-manager
   tag: latest
   imagePullPolicy: Always
+
+global:
+  cattle:
+    systemDefaultRegistry:

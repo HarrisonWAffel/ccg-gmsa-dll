@@ -13,3 +13,7 @@ image:
 certificates:
   serverSecretName: provider-certs
   clientSecretName: client-certs
+
+global:
+  cattle:
+    systemDefaultRegistry:
