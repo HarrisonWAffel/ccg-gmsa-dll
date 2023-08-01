@@ -15,7 +15,7 @@ import (
 
 const baseDir = "/var/lib/rancher/gmsa"
 
-func CreateDir(dirName, port string) error {
+func CreateDir(dirName string) error {
 	if runtime.GOOS != "windows" {
 		// this program should
 		// not run on linux
@@ -37,7 +37,10 @@ func CreateDir(dirName, port string) error {
 			return fmt.Errorf("failed to create dynamic sub directory: %v", err)
 		}
 	}
+	return nil
+}
 
+func WritePortFile(dirName, port string) error {
 	portFile := fmt.Sprintf("%s/%s/%s", baseDir, dirName, "port.txt")
 	// TODO: adjust file permissions
 	if _, err := os.Stat(portFile); os.IsNotExist(err) {
@@ -69,4 +72,11 @@ func CreateDir(dirName, port string) error {
 	}
 
 	return f.Close()
+}
+
+func WriteClientCerts(dirName string) {
+	s, e := os.Stat(fmt.Sprintf(clientCrt, baseDir, dirName))
+	fmt.Println(s, e)
+	s2, e2 := os.Stat(fmt.Sprintf(hostClientCrt, baseDir, dirName))
+	fmt.Println(s2, e2)
 }

@@ -21,17 +21,25 @@ func main() {
 		Credentials: controller,
 	}
 
+	dirName := os.Getenv("ACTIVE_DIRECTORY")
+
 	errChan := make(chan error)
-	port, err := server.StartServer(errChan, os.Getenv("ACTIVE_DIRECTORY"))
+	port, err := server.StartServer(errChan, dirName)
 	if err != nil {
 		panic(fmt.Sprintf("failed to start http server: %v", err))
 	}
 
-	err = pkg.CreateDir(os.Getenv("ACTIVE_DIRECTORY"), port)
+	err = pkg.CreateDir(dirName)
 	if err != nil {
 		panic(fmt.Sprintf("failed to create dynamic directory: %v", err))
 	}
 
+	err = pkg.WritePortFile(dirName, port)
+	if err != nil {
+		panic(fmt.Sprintf("failed to create dynamic directory: %v", err))
+	}
+
+	pkg.WriteClientCerts(dirName)
 	// block on http server error
 	select {
 	case err = <-errChan:

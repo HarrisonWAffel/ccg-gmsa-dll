@@ -16,6 +16,17 @@ type HttpServer struct {
 	Credentials *CredentialClient
 }
 
+const (
+	serverCrt = "%s/%s/container/ssl/server/tls.crt"
+	serverKey = "%s/%s/container/ssl/server/tls.key"
+
+	clientCrt = "%s/%s/container/ssl/client/tls.crt"
+	clientKey = "%s/%s/container/ssl/client/tls.key"
+
+	hostClientCrt = "%s/%s/ssl/client/tls.crt"
+	hostClientKey = "%s/%s/ssl/client/tls.key"
+)
+
 func (h *HttpServer) StartServer(errChan chan error, dirName string) (string, error) {
 	h.Engine.GET("/rancher-ccg-gmsa-provider", h.handle)
 
@@ -26,9 +37,8 @@ func (h *HttpServer) StartServer(errChan chan error, dirName string) (string, er
 	}
 
 	go func() {
-		// todo; use mtls certs via the TLS_KEY and TLS_CRT env vars
-		err = http.Serve(ln, h.Engine)
-		errChan <- err
+		err = http.ServeTLS(ln, h.Engine, fmt.Sprintf("%s/%s/container/ssl/server/tls.crt", baseDir, dirName), fmt.Sprintf("%s/%s/container/ssl/server/tls.key", baseDir, dirName))
+		errChan <- fmt.Errorf("HTTP server encountered a fatal error: %v", err.Error())
 	}()
 
 	// let the server come up and

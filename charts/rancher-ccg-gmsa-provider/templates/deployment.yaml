@@ -23,8 +23,10 @@ spec:
           image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
           imagePullPolicy: {{ .Values.image.imagePullPolicy }}
           volumeMounts:
-            - mountPath: /var/lib/rancher/ssl
-              name: certs
+            - mountPath: /var/lib/rancher/gmsa/{{ .Values.activeDirectory.name }}/container/ssl/server
+              name: server-cert
+            - mountPath: /var/lib/rancher/gmsa/{{ .Values.activeDirectory.name }}/container/ssl/client
+              name: client-cert
           securityContext:
             windowsOptions:
               hostProcess: true
@@ -34,10 +36,7 @@ spec:
               value: {{ .Values.activeDirectory.name }}
             - name: RELEASE_NAMESPACE
               value: {{ .Release.Namespace }}
-            - name: TLS_KEY
-              value: /var/lib/rancher/gmsa/{{ .Values.activeDirectory.name }}/tls.key
-            - name: TLS_CRT
-              value: /var/lib/rancher/gmsa/{{ .Values.activeDirectory.name }}/tls.crt
+      # projected volumes behave differently on windows, so we can't use them here https://kubernetes.io/docs/concepts/storage/projected-volumes/#windows
       volumes:
         - name: server-cert
           secret:

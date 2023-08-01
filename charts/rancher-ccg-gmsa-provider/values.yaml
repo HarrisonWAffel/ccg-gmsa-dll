@@ -13,6 +13,11 @@ image:
 certificates:
   serverSecretName: provider-certs
   clientSecretName: client-certs
+  certManager:
+    # Enable cert manager integration. Cert manager should be already installed at the k8s cluster
+    enabled: true
+    version: ""
+
 
 global:
   cattle:
