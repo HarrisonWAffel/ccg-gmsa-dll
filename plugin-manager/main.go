@@ -6,11 +6,12 @@ import (
 	"bytes"
 	_ "embed"
 	"fmt"
-	"golang.org/x/sys/windows/registry"
 	"os"
 	"os/exec"
 	"strings"
 	"time"
+
+	"golang.org/x/sys/windows/registry"
 )
 
 //go:embed RanchergMSACredentialProvider.dll
@@ -66,8 +67,8 @@ func upgrade() error {
 		return err
 	}
 
-	changed := !bytes.Equal(b, dll)
-	if !changed {
+	// todo; we need to test this, in theory should work
+	if bytes.Equal(b, dll) {
 		return nil
 	}
 
@@ -90,7 +91,7 @@ func upgrade() error {
 
 	// write the new file
 	err = os.WriteFile(dllPath, dll, os.ModePerm)
-	if err != nil && !strings.Contains(err.Error(), "already exists") {
+	if err != nil {
 		return fmt.Errorf("failed to write dll file: %v", err)
 	}
 
