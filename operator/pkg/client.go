@@ -14,7 +14,7 @@ type CredentialClient struct {
 func NewClient(ns string) (*CredentialClient, error) {
 	cfg, err := rest.InClusterConfig()
 	if err != nil {
-		return nil, fmt.Errorf("this application must be run as a Kubernetes workload : %v", err)
+		return nil, fmt.Errorf("this application must be run as a Kubernetes workload: %v", err)
 	}
 
 	secretCnfg, err := v1.NewForConfig(*cfg)

@@ -1,0 +1,20 @@
+apiVersion: v2
+name: rancher-CCG-gMSA-provider
+description: A Helm chart for Kubernetes
+
+annotations:
+  catalog.cattle.io/certified: rancher
+  catalog.cattle.io/display-name: Windows GMSA CCG Provider
+  catalog.cattle.io/experimental: "true"
+  catalog.cattle.io/os: windows
+  catalog.cattle.io/permits-os: windows
+  catalog.cattle.io/rancher-version: '>= 2.7.0-0 < 2.8.0-0'
+
+icon: https://charts.rancher.io/assets/logos/windows-gmsa.svg
+keywords:
+  - Windows
+  - Windows GMSA
+  - GMSA
+  - Active Directory
+type: application
+version: 1.0.0

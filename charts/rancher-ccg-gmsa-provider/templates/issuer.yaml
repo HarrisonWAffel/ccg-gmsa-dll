@@ -1,0 +1,36 @@
+{{ template "cert-manager.apiversion" . }}
+kind: Certificate
+metadata:
+  name: {{ .Release.Name }}-provider-cert
+  namespace: {{ .Release.Namespace }}
+  labels: {{ include "gmsa.chartref" . | nindent 4 }}
+spec:
+  dnsNames:
+    - localhost
+  issuerRef:
+    kind: Issuer
+    name: {{ .Release.Name }}
+  secretName: {{ .Values.certificates.serverSecretName }}
+---
+{{ template "cert-manager.apiversion" . }}
+kind: Certificate
+metadata:
+  name: {{ .Release.Name }}-client-cert
+  namespace: {{ .Release.Namespace }}
+  labels: {{ include "gmsa.chartref" . | nindent 4 }}
+spec:
+  dnsNames:
+    - localhost
+  issuerRef:
+    kind: Issuer
+    name: {{ .Release.Name }}
+  secretName: {{ .Values.certificates.clientSecretName }}
+---
+{{ template "cert-manager.apiversion" . }}
+kind: Issuer
+metadata:
+  name: {{ .Release.Name }}
+  namespace: {{ .Release.Namespace }}
+  labels: {{ include "gmsa.chartref" . | nindent 4 }}
+spec:
+  selfSigned: {}

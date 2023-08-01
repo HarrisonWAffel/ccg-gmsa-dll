@@ -17,7 +17,7 @@ type HttpServer struct {
 }
 
 func (h *HttpServer) StartServer(errChan chan error, dirName string) (string, error) {
-	h.Engine.GET("/provider", h.handle)
+	h.Engine.GET("/rancher-ccg-gmsa-provider", h.handle)
 
 	// use a host allocated port
 	ln, err := net.Listen("tcp", ":0")
@@ -26,7 +26,8 @@ func (h *HttpServer) StartServer(errChan chan error, dirName string) (string, er
 	}
 
 	go func() {
-		err := http.Serve(ln, h.Engine)
+		// todo; use mtls certs via the TLS_KEY and TLS_CRT env vars
+		err = http.Serve(ln, h.Engine)
 		errChan <- err
 	}()
 

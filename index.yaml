@@ -1,22 +1,25 @@
 apiVersion: v1
 entries:
-  gmsa-provider:
-  - annotations:
-      catalog.cattle.io/certified: rancher
-      catalog.cattle.io/kube-version: '>= 1.24.0-0 < 1.28.0-0'
-      catalog.cattle.io/os: windows
-      catalog.cattle.io/permits-os: windows
-      catalog.cattle.io/release-name: rancher-windows-gmsa-provider
-    apiVersion: v2
-    appVersion: 0.0.0
-    created: "2023-07-28T17:57:29.902296-04:00"
-    description: Simple Chart
-    digest: 27f7d72538262c120f2afd50148fb3e8c425fbc1b97b291db57681ac53590875
-    maintainers:
-    - email: example@example.com
-      name: test
-    name: gmsa-provider
+  CCG-gMSA-plugin-installer:
+  - apiVersion: v2
+    appVersion: 1.16.0
+    created: "2023-08-01T15:24:10.917629-04:00"
+    description: A Helm chart for Kubernetes
+    digest: 256a4c47dfefb275964fe68313aff21a9191bb3d6ce69b172ddc26af3b4e867b
+    name: CCG-gMSA-plugin-installer
+    type: application
     urls:
-    - https://github.com/harrisonwaffel/ccg-gmsa-dll/gmsa-provider-0.0.0.tgz
-    version: 0.0.0
-generated: "2023-07-28T17:57:29.901478-04:00"
+    - CCG-gMSA-plugin-installer-0.1.0.tgz
+    version: 0.1.0
+  rancher-CCG-gMSA-provider:
+  - apiVersion: v2
+    appVersion: 1.16.0
+    created: "2023-08-01T15:24:10.919103-04:00"
+    description: A Helm chart for Kubernetes
+    digest: 7d7a8cc758b91c1c244cd49de616b9a33a40170d76a50d0a27b08e2d75d4df46
+    name: rancher-CCG-gMSA-provider
+    type: application
+    urls:
+    - rancher-CCG-gMSA-provider-0.1.0.tgz
+    version: 0.1.0
+generated: "2023-08-01T15:24:10.91454-04:00"

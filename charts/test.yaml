@@ -94,7 +94,7 @@ spec:
       nodeSelector:
         kubernetes.io/os: windows
       containers:
-        - name: provider
+        - name: rancher-ccg-gmsa-provider
           image: harrisonwaffel/gmsa:latest
           securityContext:
             windowsOptions:

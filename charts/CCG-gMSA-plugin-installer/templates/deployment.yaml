@@ -18,7 +18,8 @@ spec:
         kubernetes.io/os: windows
       containers:
         - name: plugin-manager
-          image: harrisonwaffel/gmsa-plugin-manager:latest
+          image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
+          imagePullPolicy: {{ .Values.image.imagePullPolicy }}
           securityContext:
             windowsOptions:
               hostProcess: true
