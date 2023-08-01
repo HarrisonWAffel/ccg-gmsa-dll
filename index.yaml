@@ -2,6 +2,11 @@ apiVersion: v1
 entries:
   CCG-gMSA-plugin-installer:
   - apiVersion: v2
+    annotations:
+      catalog.cattle.io/certified: rancher
+      catalog.cattle.io/kube-version: '>= 1.24.0-0 < 1.28.0-0'
+      catalog.cattle.io/os: windows
+      catalog.cattle.io/permits-os: windows
     appVersion: 1.16.0
     created: "2023-08-01T15:24:10.917629-04:00"
     description: A Helm chart for Kubernetes
@@ -13,6 +18,11 @@ entries:
     version: 0.1.0
   rancher-CCG-gMSA-provider:
   - apiVersion: v2
+    annotations:
+      catalog.cattle.io/certified: rancher
+      catalog.cattle.io/kube-version: '>= 1.24.0-0 < 1.28.0-0'
+      catalog.cattle.io/os: windows
+      catalog.cattle.io/permits-os: windows
     appVersion: 1.16.0
     created: "2023-08-01T15:24:10.919103-04:00"
     description: A Helm chart for Kubernetes
