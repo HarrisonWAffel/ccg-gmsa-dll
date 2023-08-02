@@ -1,9 +1,12 @@
 package pkg
 
 import (
+	"crypto/tls"
+	"crypto/x509"
 	"fmt"
 	"net"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -17,18 +20,24 @@ type HttpServer struct {
 }
 
 const (
+	serverCa  = "%s/%s/container/ssl/server/ca.crt"
 	serverCrt = "%s/%s/container/ssl/server/tls.crt"
 	serverKey = "%s/%s/container/ssl/server/tls.key"
 
-	clientCrt = "%s/%s/container/ssl/client/tls.crt"
-	clientKey = "%s/%s/container/ssl/client/tls.key"
+	containerClientDir = "%s/%s/container/ssl/client"
+	containerClientCa  = containerClientDir + "/ca.crt"
+	containerClientCrt = containerClientDir + "/tls.crt"
+	containerClientKey = containerClientDir + "/tls.key"
 
-	hostClientCrt = "%s/%s/ssl/client/tls.crt"
-	hostClientKey = "%s/%s/ssl/client/tls.key"
+	hostSslDir    = "%s/%s/ssl"
+	hostClientDir = hostSslDir + "/client"
+	hostClientCa  = hostClientDir + "/ca.crt"
+	hostClientCrt = hostClientDir + "/tls.crt"
+	hostClientKey = hostClientDir + "/tls.key"
 )
 
 func (h *HttpServer) StartServer(errChan chan error, dirName string) (string, error) {
-	h.Engine.GET("/rancher-ccg-gmsa-provider", h.handle)
+	h.Engine.GET("/provider", h.handle)
 
 	// use a host allocated port
 	ln, err := net.Listen("tcp", ":0")
@@ -37,7 +46,21 @@ func (h *HttpServer) StartServer(errChan chan error, dirName string) (string, er
 	}
 
 	go func() {
-		err = http.ServeTLS(ln, h.Engine, fmt.Sprintf("%s/%s/container/ssl/server/tls.crt", baseDir, dirName), fmt.Sprintf("%s/%s/container/ssl/server/tls.key", baseDir, dirName))
+
+		pool := x509.NewCertPool()
+		clientCa, err := os.ReadFile(fmt.Sprintf(serverCa, baseDir, dirName))
+		pool.AppendCertsFromPEM(clientCa)
+
+		s := http.Server{
+			Handler: h.Engine,
+			TLSConfig: &tls.Config{
+				ClientCAs:  pool,
+				ClientAuth: tls.RequireAndVerifyClientCert,
+				MinVersion: tls.VersionTLS12,
+			},
+		}
+
+		err = s.ServeTLS(ln, fmt.Sprintf(serverCrt, baseDir, dirName), fmt.Sprintf(serverKey, baseDir, dirName))
 		errChan <- fmt.Errorf("HTTP server encountered a fatal error: %v", err.Error())
 	}()
 
@@ -68,8 +91,8 @@ func (h *HttpServer) handle(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, Response{
-		Username:   s.StringData["username"],
-		Password:   s.StringData["password"],
-		DomainName: s.StringData["domainName"],
+		Username:   string(s.Data["username"]),
+		Password:   string(s.Data["password"]),
+		DomainName: string(s.Data["domainName"]),
 	})
 }

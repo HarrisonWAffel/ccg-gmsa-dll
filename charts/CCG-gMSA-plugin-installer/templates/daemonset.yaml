@@ -18,6 +18,8 @@ spec:
         kubernetes.io/os: windows
       containers:
         - name: plugin-manager
+          args:
+            - {{ .Values.action }}
           image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
           imagePullPolicy: {{ .Values.image.imagePullPolicy }}
           securityContext:

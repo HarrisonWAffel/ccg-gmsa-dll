@@ -39,7 +39,11 @@ func main() {
 		panic(fmt.Sprintf("failed to create dynamic directory: %v", err))
 	}
 
-	pkg.WriteClientCerts(dirName)
+	err = pkg.WriteClientCerts(dirName)
+	if err != nil {
+		panic(fmt.Sprintf("failed to write mTLS certificates to host: %v", err))
+	}
+
 	// block on http server error
 	select {
 	case err = <-errChan:

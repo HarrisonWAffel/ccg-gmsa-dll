@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
-  name: rancher-gmsa-provider-deployment
+  name: rancher-gmsa-provider-daemonset
   namespace: {{ .Release.Namespace }}
   labels:
     app: gmsa-provider
@@ -14,7 +14,7 @@ spec:
       labels:
         app: gmsa-provider
     spec:
-      serviceAccountName: rancher-windows-gmsa
+      serviceAccountName: {{ .Release.Name }}-gmsa-service-account
       hostNetwork: true
       nodeSelector:
         kubernetes.io/os: windows
@@ -23,9 +23,9 @@ spec:
           image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
           imagePullPolicy: {{ .Values.image.imagePullPolicy }}
           volumeMounts:
-            - mountPath: /var/lib/rancher/gmsa/{{ .Values.activeDirectory.name }}/container/ssl/server
+            - mountPath: /var/lib/rancher/gmsa/{{ .Release.Namespace }}/container/ssl/server
               name: server-cert
-            - mountPath: /var/lib/rancher/gmsa/{{ .Values.activeDirectory.name }}/container/ssl/client
+            - mountPath: /var/lib/rancher/gmsa/{{ .Release.Namespace }}/container/ssl/client
               name: client-cert
           securityContext:
             windowsOptions:
@@ -33,7 +33,7 @@ spec:
               runAsUserName: "NT AUTHORITY\\Local service"
           env:
             - name: ACTIVE_DIRECTORY
-              value: {{ .Values.activeDirectory.name }}
+              value: {{ .Release.Namespace }}
             - name: RELEASE_NAMESPACE
               value: {{ .Release.Namespace }}
       # projected volumes behave differently on windows, so we can't use them here https://kubernetes.io/docs/concepts/storage/projected-volumes/#windows

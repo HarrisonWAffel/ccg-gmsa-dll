@@ -6,3 +6,5 @@ image:
 global:
   cattle:
     systemDefaultRegistry:
+
+action: install

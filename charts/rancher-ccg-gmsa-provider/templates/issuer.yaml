@@ -5,12 +5,16 @@ metadata:
   namespace: {{ .Release.Namespace }}
   labels: {{ include "gmsa.chartref" . | nindent 4 }}
 spec:
+  usages:
+    - server auth
+    - client auth
   dnsNames:
     - localhost
   issuerRef:
     kind: Issuer
     name: {{ .Release.Name }}
   secretName: {{ .Values.certificates.serverSecretName }}
+  isCA: false
 ---
 {{ template "cert-manager.apiversion" . }}
 kind: Certificate
@@ -19,12 +23,21 @@ metadata:
   namespace: {{ .Release.Namespace }}
   labels: {{ include "gmsa.chartref" . | nindent 4 }}
 spec:
+  privateKey:
+    algorithm: RSA
+    encoding: PKCS8
+    size: 2048
+  usages:
+    - server auth
+    - client auth
+    - cert sign
   dnsNames:
     - localhost
   issuerRef:
     kind: Issuer
     name: {{ .Release.Name }}
   secretName: {{ .Values.certificates.clientSecretName }}
+  isCA: false
 ---
 {{ template "cert-manager.apiversion" . }}
 kind: Issuer

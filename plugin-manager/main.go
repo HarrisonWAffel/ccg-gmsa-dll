@@ -36,6 +36,8 @@ const (
 	dllFileName       = "RanchergMSACredentialProvider.dll"
 )
 
+// todo; This should be an init container alongside a pause container!
+
 func main() {
 	args := os.Args[1:]
 	if len(args) == 0 {
@@ -43,17 +45,22 @@ func main() {
 	}
 
 	switch args[0] {
+	case "install":
+		if err := watchInstall(); err != nil {
+			fmt.Println(fmt.Sprintf("failed to install plugin: %v", err))
+		}
 	case "uninstall":
 		if err := uninstall(); err != nil {
-			panic(fmt.Sprintf("failed to uninstall plugin: %v", err))
+			fmt.Println(fmt.Sprintf("failed to uninstall plugin: %v", err))
 		}
 	case "upgrade":
 		if err := upgrade(); err != nil {
-			panic(fmt.Sprintf("failed to upgrade plugin: %v", err))
+			fmt.Println(fmt.Sprintf("failed to upgrade plugin: %v", err))
 		}
 	default:
 		panic(fmt.Sprintf("unknown argument %s", args[0]))
 	}
+	time.Sleep(10 * time.Minute)
 }
 
 func upgrade() error {
@@ -101,8 +108,18 @@ func upgrade() error {
 
 func uninstall() error {
 
+	notInstalled, err := notAlreadyInstalled()
+	if err != nil {
+		return fmt.Errorf("failed to determine installation status: %v", err)
+	}
+
+	if notInstalled {
+		fmt.Println("Did not find anything to uninstall")
+		return nil
+	}
+
 	fmt.Println("Beginning uninstallation process...")
-	err := os.WriteFile(fmt.Sprintf("%s\\%s", baseDir, uninstallFileName), uninstaller, os.ModePerm)
+	err = os.WriteFile(fmt.Sprintf("%s\\%s", baseDir, uninstallFileName), uninstaller, os.ModePerm)
 	if err != nil {
 		return fmt.Errorf("failed to write install script: %v", err)
 	}
@@ -144,14 +161,19 @@ func uninstall() error {
 	return nil
 }
 
-func watchInstall() {
+func watchInstall() error {
 	for {
 		fmt.Println("Checking installation...")
-		if notAlreadyInstalled() {
+		notInstalled, err := notAlreadyInstalled()
+		if err != nil {
+			return fmt.Errorf("failed to detect installation status: %v", err)
+		}
+
+		if notInstalled {
 			fmt.Println("Plugin is not installed, beginning installation in 30 seconds")
 			time.Sleep(30 * time.Second)
 			if installErr := install(); installErr != nil {
-				fmt.Println(fmt.Sprintf("error encountered during installation: %v", installErr))
+				return fmt.Errorf("error encountered during installation: %v", installErr)
 			} else {
 				fmt.Println("Installation successful!")
 			}
@@ -178,8 +200,7 @@ func install() error {
 	return nil
 }
 
-func notAlreadyInstalled() bool {
-
+func notAlreadyInstalled() (bool, error) {
 	// 1. Check that the DLL exists in the expected directory C:\Program Files\RanchergMSACredentialProvider
 	_, err := os.Stat(fmt.Sprintf(baseDir))
 	directoryDoesNotExist := err != nil
@@ -188,12 +209,18 @@ func notAlreadyInstalled() bool {
 	fileDoesNotExist := err != nil
 
 	// 2. Check the registry for a key in HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\CCG\COMClasses\{e4781092-f116-4b79-b55e-28eb6a224e26}
-	CCGEntryExists := CCGCOMClassExists(CCGCOMClassKey)
+	CCGEntryExists, err := CCGCOMClassExists(CCGCOMClassKey)
+	if err != nil {
+		return false, fmt.Errorf("failed to query CCG Com class key: %v", err)
+	}
 
 	// 3. Check the CLSID HKEY_CLASSES_ROOT\CLSID\{E4781092-F116-4B79-B55E-28EB6A224E26}
-	ClassesRootKeyExists := CLSIDExists(ClassesRootKey)
+	ClassesRootKeyExists, err := CLSIDExists(ClassesRootKey)
+	if err != nil {
+		return false, fmt.Errorf("failed to query CLSID registry key: %v", err)
+	}
 
-	return directoryDoesNotExist || fileDoesNotExist || !CCGEntryExists || !ClassesRootKeyExists
+	return directoryDoesNotExist || fileDoesNotExist || !CCGEntryExists || !ClassesRootKeyExists, nil
 }
 
 func writeArtifacts() error {
@@ -228,29 +255,29 @@ func executeInstaller() error {
 }
 
 // CCGCOMClassExists is used to get the ccg com entry
-func CCGCOMClassExists(registryKey string) bool {
+func CCGCOMClassExists(registryKey string) (bool, error) {
 	var access uint32 = registry.QUERY_VALUE
 	_, err := registry.OpenKey(registry.LOCAL_MACHINE, registryKey, access)
 	if err != nil {
 		if err != registry.ErrNotExist {
-			panic(err)
+			return false, err
 		}
-		return false
+		return false, nil
 	}
 
-	return true
+	return true, nil
 }
 
 // CLSIDExists is used to get the CLSID value
-func CLSIDExists(registryKey string) bool {
+func CLSIDExists(registryKey string) (bool, error) {
 	var access uint32 = registry.QUERY_VALUE
 	_, err := registry.OpenKey(registry.CLASSES_ROOT, registryKey, access)
 	if err != nil {
 		if err != registry.ErrNotExist {
-			panic(err)
+			return false, err
 		}
-		return false
+		return false, nil
 	}
 
-	return true
+	return true, nil
 }

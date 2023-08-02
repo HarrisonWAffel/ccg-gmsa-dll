@@ -4,14 +4,10 @@ import (
 	"fmt"
 	"os"
 	"runtime"
+	"strings"
 
 	"github.com/pkg/errors"
 )
-
-// this file creates a dynamic directory within the
-// /var/lib/rancher/gmsa directory. The name of this
-// directory needs to be the same as the release namespace
-// of the chart this operator is packaged in.
 
 const baseDir = "/var/lib/rancher/gmsa"
 
@@ -37,6 +33,7 @@ func CreateDir(dirName string) error {
 			return fmt.Errorf("failed to create dynamic sub directory: %v", err)
 		}
 	}
+
 	return nil
 }
 
@@ -49,15 +46,6 @@ func WritePortFile(dirName, port string) error {
 		if err != nil {
 			return fmt.Errorf("failed to create port.txt: %v", err)
 		}
-	}
-
-	contents, err := os.ReadFile(portFile)
-	if err != nil {
-		return fmt.Errorf("failed to read the contents of %s: %v", portFile, err)
-	}
-
-	if string(contents) == port {
-		return nil
 	}
 
 	// update file with new port
@@ -74,9 +62,42 @@ func WritePortFile(dirName, port string) error {
 	return f.Close()
 }
 
-func WriteClientCerts(dirName string) {
-	s, e := os.Stat(fmt.Sprintf(clientCrt, baseDir, dirName))
-	fmt.Println(s, e)
-	s2, e2 := os.Stat(fmt.Sprintf(hostClientCrt, baseDir, dirName))
-	fmt.Println(s2, e2)
+// WriteClientCerts copies the client tls certificate and key from the container
+// filesystem to the host filesystem so that it may be used by the CCG plugin
+func WriteClientCerts(dirName string) error {
+	containerCrt := fmt.Sprintf(containerClientCrt, baseDir, dirName)
+	containerKey := fmt.Sprintf(containerClientKey, baseDir, dirName)
+	//containerCa := fmt.Sprintf(containerClientCa, baseDir, dirName)
+
+	err := os.Mkdir(fmt.Sprintf(hostSslDir, baseDir, dirName), os.ModePerm)
+	if err != nil && !strings.Contains(err.Error(), "already exists") {
+		return fmt.Errorf("failed to create client certificate directory: %v", err)
+	}
+
+	err = os.Mkdir(fmt.Sprintf(hostClientDir, baseDir, dirName), os.ModePerm)
+	if err != nil && !strings.Contains(err.Error(), "already exists") {
+		return fmt.Errorf("failed to create client certificate directory: %v", err)
+	}
+
+	certBytes, err := os.ReadFile(containerCrt)
+	if err != nil {
+		return fmt.Errorf("failed to read client certificate file: %v", err)
+	}
+
+	err = os.WriteFile(fmt.Sprintf(hostClientCrt, baseDir, dirName), certBytes, os.ModePerm)
+	if err != nil {
+		return fmt.Errorf("failed to write client certificate to host: %v", err)
+	}
+
+	keyBytes, err := os.ReadFile(containerKey)
+	if err != nil {
+		return fmt.Errorf("failed to read client key file: %v", err)
+	}
+
+	err = os.WriteFile(fmt.Sprintf(hostClientKey, baseDir, dirName), keyBytes, os.ModePerm)
+	if err != nil {
+		return fmt.Errorf("failed to write client key to host: %v", err)
+	}
+
+	return nil
 }
