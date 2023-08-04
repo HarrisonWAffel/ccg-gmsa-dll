@@ -5,8 +5,6 @@ import (
 	"os"
 	"runtime"
 	"strings"
-
-	"github.com/pkg/errors"
 )
 
 const baseDir = "/var/lib/rancher/gmsa"
@@ -51,12 +49,12 @@ func WritePortFile(dirName, port string) error {
 	// update file with new port
 	f, err := os.OpenFile(portFile, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0755)
 	if err != nil {
-		return errors.Wrap(err, "failed to open port.txt file")
+		return fmt.Errorf("failed to open port file: %v", err)
 	}
 
 	_, err = f.WriteString(port)
 	if err != nil {
-		return errors.Wrap(err, "failed to update port.txt file")
+		return fmt.Errorf("failed to update port file: %v", err)
 	}
 
 	return f.Close()
@@ -67,7 +65,7 @@ func WritePortFile(dirName, port string) error {
 func WriteClientCerts(dirName string) error {
 	containerCrt := fmt.Sprintf(containerClientCrt, baseDir, dirName)
 	containerKey := fmt.Sprintf(containerClientKey, baseDir, dirName)
-	//containerCa := fmt.Sprintf(containerClientCa, baseDir, dirName)
+	containerCa := fmt.Sprintf(containerClientCa, baseDir, dirName)
 
 	err := os.Mkdir(fmt.Sprintf(hostSslDir, baseDir, dirName), os.ModePerm)
 	if err != nil && !strings.Contains(err.Error(), "already exists") {
@@ -95,6 +93,16 @@ func WriteClientCerts(dirName string) error {
 	}
 
 	err = os.WriteFile(fmt.Sprintf(hostClientKey, baseDir, dirName), keyBytes, os.ModePerm)
+	if err != nil {
+		return fmt.Errorf("failed to write client key to host: %v", err)
+	}
+
+	caBytes, err := os.ReadFile(containerCa)
+	if err != nil {
+		return fmt.Errorf("failed to read client key file: %v", err)
+	}
+
+	err = os.WriteFile(fmt.Sprintf(hostClientCa, baseDir, dirName), caBytes, os.ModePerm)
 	if err != nil {
 		return fmt.Errorf("failed to write client key to host: %v", err)
 	}
