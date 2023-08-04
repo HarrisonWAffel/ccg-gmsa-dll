@@ -1,8 +1,8 @@
 cd ..
 
-helm package charts/rancher-ccg-gmsa-provider
+helm package charts/rancher-ccg-dll-installer
 
-helm package charts/CCG-gMSA-plugin-installer
+helm package charts/rancher-gmsa-account-provider
 
 helm repo index .
 

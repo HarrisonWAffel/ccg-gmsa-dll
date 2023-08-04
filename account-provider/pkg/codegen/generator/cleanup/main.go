@@ -11,7 +11,7 @@ func main() {
 }
 
 func run() error {
-	if err := os.RemoveAll("./operator/pkg/generated"); err != nil {
+	if err := os.RemoveAll("./account-provider/pkg/generated"); err != nil {
 		return err
 	}
 	return nil
