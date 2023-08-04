@@ -9,9 +9,9 @@ entries:
       catalog.cattle.io/permits-os: windows
       catalog.cattle.io/rancher-version: '>= 2.7.0-0 < 2.8.0-0'
     apiVersion: v2
-    created: "2023-08-04T15:35:43.712499-04:00"
+    created: "2023-08-04T18:00:16.729139-04:00"
     description: A Helm chart for Kubernetes
-    digest: a28310c5e467240afec65850904ad156bcc51e917e2291ed6eeaadf6c81e4916
+    digest: 047c6d72bbf54212ca0131cbe3f28095ba87c3793456c11699604dcc1b70706b
     icon: https://charts.rancher.io/assets/logos/windows-gmsa.svg
     keywords:
     - Windows
@@ -32,9 +32,9 @@ entries:
       catalog.cattle.io/permits-os: windows
       catalog.cattle.io/rancher-version: '>= 2.7.0-0 < 2.8.0-0'
     apiVersion: v2
-    created: "2023-08-04T15:35:43.712692-04:00"
+    created: "2023-08-04T18:00:16.729321-04:00"
     description: A Helm chart for Kubernetes
-    digest: a15ae2c952bb5eedbee06754c9b2b30a32d9a320b8cf87984c38176ddb1db0cd
+    digest: 9f9d754eed7172add2a58645459bfd2b0d9789ff0b14323b1206825dac73af95
     icon: https://charts.rancher.io/assets/logos/windows-gmsa.svg
     keywords:
     - Windows
@@ -46,4 +46,4 @@ entries:
     urls:
     - rancher-CCG-gMSA-provider-1.0.0.tgz
     version: 1.0.0
-generated: "2023-08-04T15:35:43.71219-04:00"
+generated: "2023-08-04T18:00:16.72889-04:00"

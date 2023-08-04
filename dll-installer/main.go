@@ -41,12 +41,15 @@ const (
 func main() {
 	args := os.Args[1:]
 	if len(args) == 0 {
-		watchInstall()
+		fmt.Println("no argument supplied, defaulting to 'install'")
+		if err := install(); err != nil {
+			fmt.Println(fmt.Sprintf("failed to install plugin: %v", err))
+		}
 	}
 
 	switch args[0] {
 	case "install":
-		if err := watchInstall(); err != nil {
+		if err := install(); err != nil {
 			fmt.Println(fmt.Sprintf("failed to install plugin: %v", err))
 		}
 	case "uninstall":
@@ -60,6 +63,7 @@ func main() {
 	default:
 		panic(fmt.Sprintf("unknown argument %s", args[0]))
 	}
+
 	time.Sleep(10 * time.Minute)
 }
 
@@ -108,12 +112,12 @@ func upgrade() error {
 
 func uninstall() error {
 
-	notInstalled, err := notAlreadyInstalled()
+	installed, err := alreadyInstalled()
 	if err != nil {
 		return fmt.Errorf("failed to determine installation status: %v", err)
 	}
 
-	if notInstalled {
+	if !installed {
 		fmt.Println("Did not find anything to uninstall")
 		return nil
 	}
@@ -161,33 +165,20 @@ func uninstall() error {
 	return nil
 }
 
-func watchInstall() error {
-	for {
-		fmt.Println("Checking installation...")
-		notInstalled, err := notAlreadyInstalled()
-		if err != nil {
-			return fmt.Errorf("failed to detect installation status: %v", err)
-		}
-
-		if notInstalled {
-			fmt.Println("Plugin is not installed, beginning installation in 30 seconds")
-			time.Sleep(30 * time.Second)
-			if installErr := install(); installErr != nil {
-				return fmt.Errorf("error encountered during installation: %v", installErr)
-			} else {
-				fmt.Println("Installation successful!")
-			}
-		} else {
-			fmt.Println("Plugin already installed")
-		}
-		fmt.Println("Done checking installation")
-		// wait around for a bit before double-checking the installation
-		time.Sleep(5 * time.Minute)
-	}
-}
-
 func install() error {
-	err := writeArtifacts()
+	installed, err := alreadyInstalled()
+	if err != nil {
+		return fmt.Errorf("failed to detect installation status: %v", err)
+	}
+
+	if installed {
+		fmt.Println("plugin already installed")
+		return nil
+	}
+
+	fmt.Println("beginning installation")
+
+	err = writeArtifacts()
 	if err != nil {
 		return fmt.Errorf("failed to write artifacts: %v", err)
 	}
@@ -197,10 +188,11 @@ func install() error {
 		return fmt.Errorf("failed to execute installation script: %v", err)
 	}
 
+	fmt.Println("Installation successful!")
 	return nil
 }
 
-func notAlreadyInstalled() (bool, error) {
+func alreadyInstalled() (bool, error) {
 	// 1. Check that the DLL exists in the expected directory C:\Program Files\RanchergMSACredentialProvider
 	_, err := os.Stat(fmt.Sprintf(baseDir))
 	directoryDoesNotExist := err != nil
@@ -220,7 +212,7 @@ func notAlreadyInstalled() (bool, error) {
 		return false, fmt.Errorf("failed to query CLSID registry key: %v", err)
 	}
 
-	return directoryDoesNotExist || fileDoesNotExist || !CCGEntryExists || !ClassesRootKeyExists, nil
+	return !directoryDoesNotExist && !fileDoesNotExist && CCGEntryExists && ClassesRootKeyExists, nil
 }
 
 func writeArtifacts() error {

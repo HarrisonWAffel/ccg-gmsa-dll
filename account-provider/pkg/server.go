@@ -48,8 +48,8 @@ func (h *HttpServer) StartServer(errChan chan error, dirName string) (string, er
 	go func() {
 
 		pool := x509.NewCertPool()
-		clientCa, err := os.ReadFile(fmt.Sprintf(serverCa, baseDir, dirName))
-		pool.AppendCertsFromPEM(clientCa)
+		serverCa, err := os.ReadFile(fmt.Sprintf(serverCa, baseDir, dirName))
+		pool.AppendCertsFromPEM(serverCa)
 
 		s := http.Server{
 			Handler: h.Engine,

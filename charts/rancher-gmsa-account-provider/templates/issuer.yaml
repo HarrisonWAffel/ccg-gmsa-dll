@@ -57,4 +57,7 @@ metadata:
   namespace: {{ .Release.Namespace }}
   labels: {{ include "gmsa.chartref" . | nindent 4 }}
 spec:
-  selfSigned: {}
+  acme:
+    server: https://acme-staging-v02.api.letsencrypt.org/directory
+    email: example@example.com
+    name: letsencrypt-staging

@@ -16,13 +16,19 @@ spec:
       hostNetwork: true
       nodeSelector:
         kubernetes.io/os: windows
-      containers:
-        - name: plugin-manager
+      initContainers:
+        - name: installer
           args:
-            - {{ .Values.action }}
-          image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
+            - install
           imagePullPolicy: {{ .Values.image.imagePullPolicy }}
+          image: {{ .Values.image.repository}}:{{ .Values.image.tag }}
           securityContext:
             windowsOptions:
               hostProcess: true
               runAsUserName: "NT AUTHORITY\\SYSTEM"
+      containers:
+        - name: plugin-manager
+          args:
+            - pause
+          image: rancher/pause:3.6
+          imagePullPolicy: IfNotPresent
