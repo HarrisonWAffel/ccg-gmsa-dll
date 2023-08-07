@@ -1,4 +1,49 @@
 {{ template "cert-manager.apiversion" . }}
+kind: Issuer
+metadata:
+  name: {{ .Release.Name }}-bootstrap
+  namespace: {{ .Release.Namespace }}
+  labels: {{ include "gmsa.chartref" . | nindent 4 }}
+spec:
+  selfSigned: {}
+
+---
+
+{{ template "cert-manager.apiversion" . }}
+kind: Certificate
+metadata:
+  name: {{ .Release.Name }}-root-cert
+  namespace: {{ .Release.Namespace }}
+  labels: {{ include "gmsa.chartref" . | nindent 4 }}
+spec:
+  isCA: true
+  secretName: {{ .Release.Name }}-root-cert
+  commonName: "Root Certificate"
+  privateKey:
+    algorithm: RSA
+    size: 4096
+    encoding: PKCS8
+  issuerRef:
+    name: {{ .Release.Name }}-bootstrap
+    kind: Issuer
+
+---
+
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: {{ .Release.Name }}-root-issuer
+  namespace: {{ .Release.Namespace }}
+spec:
+  subject:
+    organizations:
+      - rancher
+  ca:
+    secretName: {{ .Release.Name }}-root-cert
+
+---
+
+{{ template "cert-manager.apiversion" . }}
 kind: Certificate
 metadata:
   name: {{ .Release.Name }}-provider-cert
@@ -7,23 +52,19 @@ metadata:
 spec:
   subject:
     organizations:
-      - Rancher
-  privateKey:
-    algorithm: RSA
-    encoding: PKCS1
-    size: 2048
+      - rancher
   usages:
     - server auth
     - client auth
-    - cert sign
   dnsNames:
+    - https://localhost
     - localhost
   issuerRef:
     kind: Issuer
-    name: {{ .Release.Name }}
+    name: {{ .Release.Name }}-root-issuer
   secretName: {{ .Values.certificates.serverSecretName }}
-  isCA: false
 ---
+
 {{ template "cert-manager.apiversion" . }}
 kind: Certificate
 metadata:
@@ -31,33 +72,16 @@ metadata:
   namespace: {{ .Release.Namespace }}
   labels: {{ include "gmsa.chartref" . | nindent 4 }}
 spec:
-  privateKey:
-    algorithm: RSA
-    encoding: PKCS1
-    size: 2048
+  subject:
+    organizations:
+      - rancher
+  dnsNames:
+    - https://localhost
+    - localhost
   usages:
     - server auth
     - client auth
-    - cert sign
-  subject:
-    organizations:
-      - Rancher
-  dnsNames:
-    - localhost
   issuerRef:
     kind: Issuer
-    name: {{ .Release.Name }}
+    name: {{ .Release.Name }}-root-issuer
   secretName: {{ .Values.certificates.clientSecretName }}
-  isCA: false
----
-{{ template "cert-manager.apiversion" . }}
-kind: Issuer
-metadata:
-  name: {{ .Release.Name }}
-  namespace: {{ .Release.Namespace }}
-  labels: {{ include "gmsa.chartref" . | nindent 4 }}
-spec:
-  acme:
-    server: https://acme-staging-v02.api.letsencrypt.org/directory
-    email: example@example.com
-    name: letsencrypt-staging

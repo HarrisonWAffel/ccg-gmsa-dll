@@ -91,12 +91,12 @@ namespace rancher.gmsa
             var secretUri = "http://localhost:" + pluginInput.Port + "/provider";
 
             //X509Certificate2 clientCertificate = new X509Certificate2("/var/lib/rancher/gmsa/" + pluginInput.ActiveDirectory + "ssl/client/tls.crt");
-            //HttpClient httpClient = new HttpClient(new HttpClientHandler
-            //{
-            //    ClientCertificateOptions = ClientCertificateOption.Manual,
-            //    SslProtocols = SslProtocols.Tls12,
-            //    ClientCertificates = { clientCertificate }
-            //});
+            HttpClient httpClient = new HttpClient(new HttpClientHandler
+            {
+                ClientCertificateOptions = ClientCertificateOption.Manual,
+                SslProtocols = SslProtocols.Tls12,
+                ClientCertificates = { clientCertificate }
+            });
 
             HttpClient httpClient = new HttpClient();
 

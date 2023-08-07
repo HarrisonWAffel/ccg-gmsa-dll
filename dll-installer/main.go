@@ -63,8 +63,6 @@ func main() {
 	default:
 		panic(fmt.Sprintf("unknown argument %s", args[0]))
 	}
-
-	time.Sleep(10 * time.Minute)
 }
 
 func upgrade() error {

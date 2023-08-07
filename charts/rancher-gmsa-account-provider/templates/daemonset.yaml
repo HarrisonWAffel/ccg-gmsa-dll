@@ -27,10 +27,12 @@ spec:
               name: server-cert
             - mountPath: /var/lib/rancher/gmsa/{{ .Release.Namespace }}/container/ssl/client
               name: client-cert
+            - mountPath: /var/lib/rancher/gmsa/{{ .Release.Namespace }}/container/ssl/ca
+              name: root-ca
           securityContext:
             windowsOptions:
               hostProcess: true
-              runAsUserName: "NT AUTHORITY\\Local service"
+              runAsUserName: "NT AUTHORITY\\SYSTEM"
           env:
             - name: ACTIVE_DIRECTORY
               value: {{ .Release.Namespace }}
@@ -38,6 +40,9 @@ spec:
               value: {{ .Release.Namespace }}
       # projected volumes behave differently on windows, so we can't use them here https://kubernetes.io/docs/concepts/storage/projected-volumes/#windows
       volumes:
+        - name: root-ca
+          secret:
+            secretName: {{ .Release.Name }}-root-cert
         - name: server-cert
           secret:
             secretName: {{ .Values.certificates.serverSecretName }}

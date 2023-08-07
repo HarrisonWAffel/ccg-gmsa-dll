@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
-  name: gmsa-plugin-manager-deployment
+  name: gmsa-plugin-manager-daemonset
   labels:
     app: gmsa-plugin-manager
 spec:
@@ -19,7 +19,7 @@ spec:
       initContainers:
         - name: installer
           args:
-            - install
+            - {{ .Values.action }}
           imagePullPolicy: {{ .Values.image.imagePullPolicy }}
           image: {{ .Values.image.repository}}:{{ .Values.image.tag }}
           securityContext:
@@ -30,5 +30,9 @@ spec:
         - name: plugin-manager
           args:
             - pause
-          image: rancher/pause:3.6
+          image: rancher/mirrored-pause:3.7
+          securityContext:
+            windowsOptions:
+              hostProcess: true
+              runAsUserName: "NT AUTHORITY\\SYSTEM"
           imagePullPolicy: IfNotPresent

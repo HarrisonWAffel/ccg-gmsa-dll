@@ -3,6 +3,7 @@ package pkg
 import (
 	"crypto/tls"
 	"crypto/x509"
+	"encoding/json"
 	"fmt"
 	"net"
 	"net/http"
@@ -19,23 +20,6 @@ type HttpServer struct {
 	Credentials *CredentialClient
 }
 
-const (
-	serverCa  = "%s/%s/container/ssl/server/ca.crt"
-	serverCrt = "%s/%s/container/ssl/server/tls.crt"
-	serverKey = "%s/%s/container/ssl/server/tls.key"
-
-	containerClientDir = "%s/%s/container/ssl/client"
-	containerClientCa  = containerClientDir + "/ca.crt"
-	containerClientCrt = containerClientDir + "/tls.crt"
-	containerClientKey = containerClientDir + "/tls.key"
-
-	hostSslDir    = "%s/%s/ssl"
-	hostClientDir = hostSslDir + "/client"
-	hostClientCa  = hostClientDir + "/ca.crt"
-	hostClientCrt = hostClientDir + "/tls.crt"
-	hostClientKey = hostClientDir + "/tls.key"
-)
-
 func (h *HttpServer) StartServer(errChan chan error, dirName string) (string, error) {
 	h.Engine.GET("/provider", h.handle)
 
@@ -48,13 +32,31 @@ func (h *HttpServer) StartServer(errChan chan error, dirName string) (string, er
 	go func() {
 
 		pool := x509.NewCertPool()
-		serverCa, err := os.ReadFile(fmt.Sprintf(serverCa, baseDir, dirName))
-		pool.AppendCertsFromPEM(serverCa)
+		clientCa, err := os.ReadFile(fmt.Sprintf(containerClientCa, baseDir, dirName))
+		pool.AppendCertsFromPEM(clientCa)
+
+		aca, err := os.ReadFile(fmt.Sprintf(serverCa, baseDir, dirName))
+		pool.AppendCertsFromPEM(aca)
+
+		rca, err := os.ReadFile(fmt.Sprintf(containerRootCa, baseDir, dirName))
+		pool.AppendCertsFromPEM(rca)
 
 		s := http.Server{
 			Handler: h.Engine,
 			TLSConfig: &tls.Config{
-				ClientCAs:  pool,
+				InsecureSkipVerify: true,
+				ClientCAs:          pool,
+				VerifyConnection: func(state tls.ConnectionState) error {
+					fmt.Println("verify conn")
+					fmt.Println(state)
+					j, _ := json.MarshalIndent(state, "", " ")
+					fmt.Println(string(j))
+					return nil
+				},
+				VerifyPeerCertificate: func(rawCerts [][]byte, verifiedChains [][]*x509.Certificate) error {
+					fmt.Println("verify peer")
+					return nil
+				},
 				ClientAuth: tls.RequireAndVerifyClientCert,
 				MinVersion: tls.VersionTLS12,
 			},

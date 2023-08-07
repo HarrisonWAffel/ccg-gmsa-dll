@@ -2,10 +2,9 @@ package main
 
 import (
 	"fmt"
-	"os"
-
 	"github.com/gin-gonic/gin"
 	"harrisonwaffel/ccg-gmsa-dll/pkg"
+	"os"
 )
 
 // todo; Finalizer to clean up the tmp dirs
@@ -23,18 +22,7 @@ func main() {
 
 	dirName := os.Getenv("ACTIVE_DIRECTORY")
 
-	errChan := make(chan error)
-	port, err := server.StartServer(errChan, dirName)
-	if err != nil {
-		panic(fmt.Sprintf("failed to start http server: %v", err))
-	}
-
 	err = pkg.CreateDir(dirName)
-	if err != nil {
-		panic(fmt.Sprintf("failed to create dynamic directory: %v", err))
-	}
-
-	err = pkg.WritePortFile(dirName, port)
 	if err != nil {
 		panic(fmt.Sprintf("failed to create dynamic directory: %v", err))
 	}
@@ -42,6 +30,17 @@ func main() {
 	err = pkg.WriteClientCerts(dirName)
 	if err != nil {
 		panic(fmt.Sprintf("failed to write mTLS certificates to host: %v", err))
+	}
+
+	errChan := make(chan error)
+	port, err := server.StartServer(errChan, dirName)
+	if err != nil {
+		panic(fmt.Sprintf("failed to start http server: %v", err))
+	}
+
+	err = pkg.WritePortFile(dirName, port)
+	if err != nil {
+		panic(fmt.Sprintf("failed to create dynamic directory: %v", err))
 	}
 
 	// block on http server error

@@ -3,11 +3,43 @@ package pkg
 import (
 	"fmt"
 	"os"
+	"os/exec"
 	"runtime"
 	"strings"
 )
 
-const baseDir = "/var/lib/rancher/gmsa"
+const (
+	baseDir = "/var/lib/rancher/gmsa"
+
+	serverCa  = "%s/%s/container/ssl/server/ca.crt"
+	serverCrt = "%s/%s/container/ssl/server/tls.crt"
+	serverKey = "%s/%s/container/ssl/server/tls.key"
+
+	containerClientDir = "%s/%s/container/ssl/client"
+	containerClientCa  = containerClientDir + "/ca.crt"
+	containerClientCrt = containerClientDir + "/tls.crt"
+	containerClientKey = containerClientDir + "/tls.key"
+
+	containerRootCaDir = containerClientDir + "/ca"
+	containerRootCa    = containerRootCaDir + "/ca.crt"
+
+	hostSslDir = "%s/%s/ssl"
+
+	hostCaDir  = hostSslDir + "/ca"
+	hostRootCa = hostCaDir + "/ca.crt"
+
+	hostClientDir = hostSslDir + "/client"
+	hostClientCa  = hostClientDir + "/ca.crt"
+	hostClientCrt = hostClientDir + "/tls.crt"
+	hostClientKey = hostClientDir + "/tls.key"
+
+	hostServerDir = hostSslDir + "/server"
+	hostServerCa  = hostServerDir + "/ca.crt"
+	hostServerCrt = hostServerDir + "/tls.crt"
+	hostServerKey = hostServerDir + "/tls.key"
+
+	fingerPrintDir = hostSslDir + "/fingerprint.txt"
+)
 
 func CreateDir(dirName string) error {
 	if runtime.GOOS != "windows" {
@@ -77,6 +109,11 @@ func WriteClientCerts(dirName string) error {
 		return fmt.Errorf("failed to create client certificate directory: %v", err)
 	}
 
+	err = os.Mkdir(fmt.Sprintf(hostServerDir, baseDir, dirName), os.ModePerm)
+	if err != nil && !strings.Contains(err.Error(), "already exists") {
+		return fmt.Errorf("failed to create client certificate directory: %v", err)
+	}
+
 	certBytes, err := os.ReadFile(containerCrt)
 	if err != nil {
 		return fmt.Errorf("failed to read client certificate file: %v", err)
@@ -105,6 +142,31 @@ func WriteClientCerts(dirName string) error {
 	err = os.WriteFile(fmt.Sprintf(hostClientCa, baseDir, dirName), caBytes, os.ModePerm)
 	if err != nil {
 		return fmt.Errorf("failed to write client key to host: %v", err)
+	}
+
+	sCrt, err := os.ReadFile(fmt.Sprintf(serverCrt, baseDir, dirName))
+	if err != nil {
+		return fmt.Errorf("failed to write server crt to host: %v", err)
+	}
+
+	err = os.WriteFile(fmt.Sprintf(hostServerCa, baseDir, dirName), sCrt, os.ModePerm)
+	if err != nil {
+		return fmt.Errorf("failed to write server crt to host: %v", err)
+	}
+
+	imports := []string{
+		fmt.Sprintf(hostClientDir, baseDir, dirName),
+		fmt.Sprintf(hostServerCa, baseDir, dirName),
+	}
+
+	for _, e := range imports {
+		cmd := exec.Command("powershell", "-Command", "Import-Certificate", "-FilePath", e, "-CertStoreLocation", "Cert:\\LocalMachine\\Root", "-Verbose")
+		fmt.Println(cmd.String())
+		o, err := cmd.CombinedOutput()
+		if err != nil {
+			fmt.Println(fmt.Errorf("failed to add server certificate to windows cert store: %v", err))
+		}
+		fmt.Println(string(o))
 	}
 
 	return nil
