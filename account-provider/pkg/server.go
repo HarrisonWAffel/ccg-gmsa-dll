@@ -2,12 +2,9 @@ package pkg
 
 import (
 	"crypto/tls"
-	"crypto/x509"
-	"encoding/json"
 	"fmt"
 	"net"
 	"net/http"
-	"os"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -20,7 +17,7 @@ type HttpServer struct {
 	Credentials *CredentialClient
 }
 
-func (h *HttpServer) StartServer(errChan chan error, dirName string) (string, error) {
+func (h *HttpServer) StartServer(errChan chan error, activeDirectoryName string) (string, error) {
 	h.Engine.GET("/provider", h.handle)
 
 	// use a host allocated port
@@ -30,39 +27,15 @@ func (h *HttpServer) StartServer(errChan chan error, dirName string) (string, er
 	}
 
 	go func() {
-
-		pool := x509.NewCertPool()
-		clientCa, err := os.ReadFile(fmt.Sprintf(containerClientCa, baseDir, dirName))
-		pool.AppendCertsFromPEM(clientCa)
-
-		aca, err := os.ReadFile(fmt.Sprintf(serverCa, baseDir, dirName))
-		pool.AppendCertsFromPEM(aca)
-
-		rca, err := os.ReadFile(fmt.Sprintf(containerRootCa, baseDir, dirName))
-		pool.AppendCertsFromPEM(rca)
-
 		s := http.Server{
 			Handler: h.Engine,
 			TLSConfig: &tls.Config{
-				InsecureSkipVerify: true,
-				ClientCAs:          pool,
-				VerifyConnection: func(state tls.ConnectionState) error {
-					fmt.Println("verify conn")
-					fmt.Println(state)
-					j, _ := json.MarshalIndent(state, "", " ")
-					fmt.Println(string(j))
-					return nil
-				},
-				VerifyPeerCertificate: func(rawCerts [][]byte, verifiedChains [][]*x509.Certificate) error {
-					fmt.Println("verify peer")
-					return nil
-				},
 				ClientAuth: tls.RequireAndVerifyClientCert,
 				MinVersion: tls.VersionTLS12,
 			},
 		}
 
-		err = s.ServeTLS(ln, fmt.Sprintf(serverCrt, baseDir, dirName), fmt.Sprintf(serverKey, baseDir, dirName))
+		err = s.ServeTLS(ln, fmt.Sprintf(containerServerCrt, gmsaDirectory, activeDirectoryName), fmt.Sprintf(serverKey, gmsaDirectory, activeDirectoryName))
 		errChan <- fmt.Errorf("HTTP server encountered a fatal error: %v", err.Error())
 	}()
 

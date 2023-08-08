@@ -18,7 +18,7 @@ metadata:
 spec:
   isCA: true
   secretName: {{ .Release.Name }}-root-cert
-  commonName: "Root Certificate"
+  commonName: {{.Release.Name}}-gMSA-Root-Certificate
   privateKey:
     algorithm: RSA
     size: 4096
@@ -37,7 +37,7 @@ metadata:
 spec:
   subject:
     organizations:
-      - rancher
+      - rancher-gmsa-{{ .Release.Name }}
   ca:
     secretName: {{ .Release.Name }}-root-cert
 
@@ -52,7 +52,7 @@ metadata:
 spec:
   subject:
     organizations:
-      - rancher
+      - rancher-gmsa-{{ .Release.Name }}
   usages:
     - server auth
     - client auth
@@ -74,7 +74,7 @@ metadata:
 spec:
   subject:
     organizations:
-      - rancher
+      - rancher-gmsa-{{ .Release.Name }}
   dnsNames:
     - https://localhost
     - localhost

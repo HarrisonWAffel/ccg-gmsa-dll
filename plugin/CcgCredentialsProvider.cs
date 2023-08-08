@@ -1,11 +1,11 @@
 ﻿using System;
 using System.EnterpriseServices;
 using System.Runtime.InteropServices;
-using System.Net.Http;
 using System.IO;
 using System.Net;
 using System.Diagnostics;
 using System.Security.Cryptography.X509Certificates;
+using System.Net.Http;
 using System.Security.Authentication;
 
 namespace rancher.gmsa
@@ -61,6 +61,7 @@ namespace rancher.gmsa
             [MarshalAs(UnmanagedType.LPWStr)] out string username,
             [MarshalAs(UnmanagedType.LPWStr)] out string password)
         {
+            ServicePointManager.Expect100Continue = true;
             try
             {
                GetCredential(DecodeInput(pluginInput));
@@ -84,35 +85,44 @@ namespace rancher.gmsa
 
         public void GetCredential(PluginInput pluginInput)
         {
-            // disable SSL checks for development
-            ServicePointManager.ServerCertificateValidationCallback += (sender, cert, chain, sslPolicyErrors) => true;
-
-            // todo; mTLS
-            var secretUri = "http://localhost:" + pluginInput.Port + "/provider";
-
-            //X509Certificate2 clientCertificate = new X509Certificate2("/var/lib/rancher/gmsa/" + pluginInput.ActiveDirectory + "ssl/client/tls.crt");
-            HttpClient httpClient = new HttpClient(new HttpClientHandler
-            {
-                ClientCertificateOptions = ClientCertificateOption.Manual,
-                SslProtocols = SslProtocols.Tls12,
-                ClientCertificates = { clientCertificate }
-            });
-
-            HttpClient httpClient = new HttpClient();
+            var secretUri = "https://localhost:" + pluginInput.Port + "/provider";
 
             LogInfo("Preparing to make request: Using secret: " + pluginInput.SecretName + "from namespace: " + pluginInput.ActiveDirectory + " and port: " + pluginInput.Port + " results in uri: " + secretUri);
             try
             {
-                HttpRequestMessage req = new HttpRequestMessage(HttpMethod.Get, secretUri);
-                req.Headers.Add("object", pluginInput.SecretName);
-                var response = httpClient.SendAsync(req).Result;
+                // we don't have a PKI setup to distribute CRL, so disable the check globally
+                ServicePointManager.CheckCertificateRevocationList = false;
+
+                // we use a pfx so we can bundle the cert and private key together in a single file
+                var crt = "/var/lib/rancher/gmsa/" + pluginInput.ActiveDirectory + "/ssl/client/tls.pfx";
+                X509Certificate2 clientCertificate = new X509Certificate2(File.ReadAllBytes(crt), (string)null, X509KeyStorageFlags.MachineKeySet);
+
+                HttpClient httpClient = new HttpClient(new HttpClientHandler
+                {
+                    ClientCertificateOptions = ClientCertificateOption.Manual,
+                    SslProtocols = SslProtocols.Tls12,
+                    ClientCertificates = { clientCertificate },
+                    CheckCertificateRevocationList = false,
+                });
+
+                var httpRequestMessage = new HttpRequestMessage(HttpMethod.Get, secretUri);
+                httpRequestMessage.Headers.Add("object", pluginInput.SecretName);
+
+                var response = httpClient.SendAsync(httpRequestMessage).Result;
                 var x = response.Content.ReadAsStringAsync().Result;
-                LogInfo("Got response, " + response.Content.ToString() +", and content of: " + x);
+                LogInfo("Got response, " + response.Content.ToString() + ", and content of: " + x);
+
+
+                // creating x509Certificate2 objects writes a few files to disk,
+                // make sure we clean them up now that we are done with them
+                clientCertificate.Reset();
+                clientCertificate.Dispose();
             }
             catch (Exception ex)
             {
                 LogError("Http Client Hit An Exception: \n " + ex.ToString());
             }
+
         }
 
         public PluginInput DecodeInput(string pluginInput)
@@ -130,20 +140,20 @@ namespace rancher.gmsa
                 }
                 this.ActiveDirectory = parts[0];
                 this.SecretName = parts[1];
-                this.Port = GetPort(pluginInput);
+                this.Port = GetPort();
             }
 
             public string ActiveDirectory { get; set; }
             public string SecretName { get; set; }
             public string Port { get; set; }
 
-            public string GetPort(string pluginInput)
+            public string GetPort()
             {
                string subDirFile = "/var/lib/rancher/gmsa/" + this.ActiveDirectory + "/port.txt";
                try {
                    return File.ReadAllText(subDirFile);
                } catch (Exception e) {
-                    throw new Exception("Failed to open port file located at " + subDirFile);
+                    throw new Exception("Failed to open port file located at " + subDirFile +": " + e.ToString());
                }
             }
         }

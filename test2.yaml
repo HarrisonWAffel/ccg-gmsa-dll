@@ -1,0 +1,35 @@
+# test gmsa workload,
+# it's a bit big
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: rapid-win-webserver
+  name: win-webserver
+  namespace: cattle-windows-gmsa-system
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: win-webserver
+  template:
+    metadata:
+      labels:
+        app: win-webserver
+      name: win-webserver
+    spec:
+      serviceAccount: rancher-windows-gmsa
+      serviceAccountName: rancher-windows-gmsa
+      containers:
+        - name: windowswebserver
+          image: mcr.microsoft.com/windows/servercore:ltsc2022
+          securityContext:
+            windowsOptions:
+              gmsaCredentialSpecName: test
+          command:
+            - powershell.exe
+            - -command
+            - Start-Sleep -Seconds 120
+      nodeSelector:
+        kubernetes.io/os: windows

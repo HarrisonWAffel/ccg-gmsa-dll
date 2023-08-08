@@ -20,25 +20,25 @@ func main() {
 		Credentials: controller,
 	}
 
-	dirName := os.Getenv("ACTIVE_DIRECTORY")
+	activeDirectoryName := os.Getenv("ACTIVE_DIRECTORY")
 
-	err = pkg.CreateDir(dirName)
+	err = pkg.CreateDir(activeDirectoryName)
 	if err != nil {
 		panic(fmt.Sprintf("failed to create dynamic directory: %v", err))
 	}
 
-	err = pkg.WriteClientCerts(dirName)
+	err = pkg.WriteCerts(activeDirectoryName)
 	if err != nil {
 		panic(fmt.Sprintf("failed to write mTLS certificates to host: %v", err))
 	}
 
 	errChan := make(chan error)
-	port, err := server.StartServer(errChan, dirName)
+	port, err := server.StartServer(errChan, activeDirectoryName)
 	if err != nil {
 		panic(fmt.Sprintf("failed to start http server: %v", err))
 	}
 
-	err = pkg.WritePortFile(dirName, port)
+	err = pkg.WritePortFile(activeDirectoryName, port)
 	if err != nil {
 		panic(fmt.Sprintf("failed to create dynamic directory: %v", err))
 	}
