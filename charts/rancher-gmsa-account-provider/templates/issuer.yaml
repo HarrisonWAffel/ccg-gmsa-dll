@@ -18,7 +18,7 @@ metadata:
 spec:
   isCA: true
   secretName: {{ .Release.Name }}-root-cert
-  commonName: {{.Release.Name}}-gMSA-Root-Certificate
+  commonName: rancher-gmsa-{{.Release.Name}}-root-certificate
   privateKey:
     algorithm: RSA
     size: 4096
@@ -55,7 +55,6 @@ spec:
       - rancher-gmsa-{{ .Release.Name }}
   usages:
     - server auth
-    - client auth
   dnsNames:
     - https://localhost
     - localhost
@@ -65,6 +64,16 @@ spec:
   secretName: {{ .Values.certificates.serverSecretName }}
 ---
 
+apiVersion: v1
+kind: Secret
+metadata:
+  name: {{ .Release.Name }}-gmsa-pkcs12-secret
+  namespace: {{ .Release.Namespace }}
+stringData:
+  CertificatePassword: "SOME_PASSWORD_HERE"
+
+---
+
 {{ template "cert-manager.apiversion" . }}
 kind: Certificate
 metadata:
@@ -72,6 +81,12 @@ metadata:
   namespace: {{ .Release.Namespace }}
   labels: {{ include "gmsa.chartref" . | nindent 4 }}
 spec:
+  keystores:
+    pkcs12:
+      create: true
+      passwordSecretRef:
+        key: CertificatePassword
+        name: {{ .Release.Name }}-gmsa-pkcs12-secret
   subject:
     organizations:
       - rancher-gmsa-{{ .Release.Name }}
@@ -79,7 +94,6 @@ spec:
     - https://localhost
     - localhost
   usages:
-    - server auth
     - client auth
   issuerRef:
     kind: Issuer

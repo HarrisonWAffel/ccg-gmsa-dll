@@ -2,15 +2,21 @@ package main
 
 import (
 	"fmt"
-	"github.com/gin-gonic/gin"
-	"harrisonwaffel/ccg-gmsa-dll/pkg"
 	"os"
+
+	"github.com/gin-gonic/gin"
+	log "github.com/sirupsen/logrus"
+	"harrisonwaffel/ccg-gmsa-dll/pkg"
 )
 
 // todo; Finalizer to clean up the tmp dirs
 
 func main() {
-	controller, err := pkg.NewClient(os.Getenv("RELEASE_NAMESPACE"))
+	setLogLevel()
+
+	activeDirectoryName := os.Getenv("ACTIVE_DIRECTORY")
+
+	controller, err := pkg.NewClient(activeDirectoryName)
 	if err != nil {
 		panic(fmt.Sprintf("failed to setup wrangler controller: %v", err))
 	}
@@ -19,8 +25,6 @@ func main() {
 		Engine:      gin.Default(),
 		Credentials: controller,
 	}
-
-	activeDirectoryName := os.Getenv("ACTIVE_DIRECTORY")
 
 	err = pkg.CreateDir(activeDirectoryName)
 	if err != nil {
@@ -47,5 +51,18 @@ func main() {
 	select {
 	case err = <-errChan:
 		panic(err)
+	}
+}
+
+func setLogLevel() {
+	switch os.Getenv("LOG_LEVEL") {
+	case "info":
+		log.SetLevel(log.InfoLevel)
+	case "debug":
+		log.SetLevel(log.DebugLevel)
+	case "trace":
+		log.SetLevel(log.TraceLevel)
+	default:
+		log.SetLevel(log.InfoLevel)
 	}
 }

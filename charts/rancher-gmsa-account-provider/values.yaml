@@ -7,11 +7,26 @@ certificates:
   serverSecretName: provider-certs
   clientSecretName: client-certs
   certManager:
-    # Enable cert manager integration. Cert manager should be already installed at the k8s cluster
     enabled: true
     version: ""
 
+log:
+  level: debug
 
 global:
   cattle:
     systemDefaultRegistry:
+
+credential:
+  enabled: false
+  hostAccountConfig:
+    pluginGUID: "e4781092-f116-4b79-b55e-28eb6a224e26"
+    portableCcgVersion: "1"
+    pluginInput: ""
+  domainJoinConfig:
+    dnsName: ""  #DNS Domain Name
+    dnsTreeName: "" #DNS Domain Name Root
+    guid: ""  #GUID
+    machineAccountName: "" #Username of the GMSA account
+    netBiosName: ""  #NETBIOS Domain Name
+    sid: "" #SID of GMSA

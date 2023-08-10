@@ -2,6 +2,8 @@ package pkg
 
 import (
 	"crypto/tls"
+	"crypto/x509"
+	"encoding/json"
 	"fmt"
 	"net"
 	"net/http"
@@ -30,6 +32,32 @@ func (h *HttpServer) StartServer(errChan chan error, activeDirectoryName string)
 		s := http.Server{
 			Handler: h.Engine,
 			TLSConfig: &tls.Config{
+				VerifyConnection: func(state tls.ConnectionState) error {
+					j, _ := json.MarshalIndent(state, "", " ")
+					fmt.Println("--- STATE ---")
+					fmt.Println(string(j))
+					fmt.Println("--- END ---")
+					return nil
+				},
+				VerifyPeerCertificate: func(rawCerts [][]byte, verifiedChains [][]*x509.Certificate) error {
+					fmt.Println("--- CHAINS ---")
+					j, _ := json.MarshalIndent(verifiedChains, "", " ")
+					for _, e := range verifiedChains {
+						for _, chain := range e {
+							fmt.Println("---")
+							fmt.Println(chain.Issuer.CommonName)
+							fmt.Println(chain.Version)
+							fmt.Println(chain.Subject)
+							fmt.Println(chain.IsCA)
+							fmt.Println(chain.BasicConstraintsValid)
+							fmt.Println("---")
+
+						}
+					}
+					fmt.Println(string(j))
+					fmt.Println("--- END ---")
+					return nil
+				},
 				ClientAuth: tls.RequireAndVerifyClientCert,
 				MinVersion: tls.VersionTLS12,
 			},
